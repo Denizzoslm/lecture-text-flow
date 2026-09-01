@@ -144,6 +144,7 @@ export const transcribePage = createServerFn({ method: "POST" })
     z
       .object({
         imageDataUrl: z.string().min(32).max(12_000_000),
+        style: z.enum(["fidele", "propre"]).default("fidele"),
       })
       .parse(data),
   )
@@ -154,8 +155,10 @@ export const transcribePage = createServerFn({ method: "POST" })
     }
 
     const image: ResponsePart = { type: "input_image", image_url: data.imageDataUrl };
+    const basePrompt =
+      data.style === "propre" ? `${TRANSCRIPTION_PROMPT}\n\n${CLEAN_PROMPT}` : TRANSCRIPTION_PROMPT;
 
-    const draft = await askGateway(apiKey, [{ type: "input_text", text: TRANSCRIPTION_PROMPT }, image]);
+    const draft = await askGateway(apiKey, [{ type: "input_text", text: basePrompt }, image]);
     if (!draft) {
       throw new Error("La retranscription est revenue vide. Reprenez la photo si elle est floue.");
     }
