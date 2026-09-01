@@ -16,6 +16,8 @@ MÉTHODE OBLIGATOIRE :
 MISE EN PAGE (à reproduire fidèlement) :
 - '# ' uniquement si un titre principal est visible ; '## ' pour les sections visibles, '### ' pour les sous-parties visibles.
 - Conserve les repères de structure tels qu'écrits : « A. », « a) », « b) », « 1° », listes à puces, etc.
+- NUMÉROS D'EXERCICE : tout repère d'exercice ou de question numéroté (« 4. », « Exercice 3 », « 1) », « 2° »…) est écrit EN GRAS, en début de ligne, suivi de son énoncé : par exemple « **4.** $8h \\to 8\\,000$ bactéries ».
+- REPÈRES EN LETTRES : chaque sous-question en lettre (« a) », « b) », « c) »…) commence une nouvelle ligne, la lettre est conservée telle quelle et la ligne est INDENTÉE d'un alinéa (2 espaces avant le repère) si elle est visiblement décalée vers la droite sur la feuille. Les lignes de calcul qui dépendent d'une lettre gardent le même alinéa (ou un alinéa supplémentaire si elles sont encore plus décalées sur la photo).
 - Encadrés : utilise > . Soulignements : reprends-les en **gras**.
 - TABLEAUX : un tableau Markdown distinct par tableau dessiné, chacun avec sa propre ligne d'en-tête. Si deux tableaux sont côte à côte sur la page, écris-les l'un après l'autre séparés UNIQUEMENT par une ligne vide (jamais de texte, de titre ni de trait entre eux) : ils seront réaffichés côte à côte. Ne fusionne jamais deux tableaux en un seul. Garde exactement les mêmes en-têtes, le même nombre de lignes et les mêmes valeurs.
 - Toutes les formules et expressions mathématiques en LaTeX : $...$ en ligne, $$...$$ pour une formule isolée ou centrée sur la page.
