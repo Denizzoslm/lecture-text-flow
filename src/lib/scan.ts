@@ -131,33 +131,119 @@ function detectDocumentQuad(source: Source): Quad | null {
   const { pixels, size } = component;
   if (size < w * h * 0.18) return null;
 
-  let tl = 0;
-  let br = 0;
-  let tr = 0;
-  let bl = 0;
-  let minSum = Infinity;
-  let maxSum = -Infinity;
-  let minDiff = Infinity;
-  let maxDiff = -Infinity;
+  // Enveloppe convexe de la composante, puis quadrilatère d'aire maximale.
+  const inside = new Uint8Array(w * h);
+  for (const index of pixels) inside[index] = 1;
+  const boundary: Corner[] = [];
   for (const index of pixels) {
     const x = index % w;
-    const y = Math.floor(index / w);
-    const sum = x + y;
-    const diff = x - y;
-    if (sum < minSum) (minSum = sum), (tl = index);
-    if (sum > maxSum) (maxSum = sum), (br = index);
-    if (diff > maxDiff) (maxDiff = diff), (tr = index);
-    if (diff < minDiff) (minDiff = diff), (bl = index);
+    const y = (index - x) / w;
+    const edge =
+      x === 0 ||
+      y === 0 ||
+      x === w - 1 ||
+      y === h - 1 ||
+      !inside[index - 1] ||
+      !inside[index + 1] ||
+      !inside[index - w] ||
+      !inside[index + w];
+    if (edge) boundary.push({ x, y });
   }
 
-  const toPoint = (index: number): Corner => ({
-    x: (index % w) / scale,
-    y: Math.floor(index / w) / scale,
-  });
-  const quad: Quad = [toPoint(tl), toPoint(tr), toPoint(br), toPoint(bl)];
+  const hull = simplify(convexHull(boundary), 48);
+  if (hull.length < 4) return null;
+  const best = maxAreaQuad(hull);
+  if (!best) return null;
 
+  const quad = orderQuad(best).map((corner) => ({ x: corner.x / scale, y: corner.y / scale })) as Quad;
   return isPlausible(quad, canvas.width, canvas.height) ? quad : null;
 }
+
+function convexHull(points: Corner[]): Corner[] {
+  if (points.length < 4) return points;
+  const sorted = [...points].sort((a, b) => (a.x === b.x ? a.y - b.y : a.x - b.x));
+  const build = (list: Corner[]) => {
+    const stack: Corner[] = [];
+    for (const point of list) {
+      while (stack.length >= 2) {
+        const a = stack[stack.length - 2] as Corner;
+        const b = stack[stack.length - 1] as Corner;
+        if ((b.x - a.x) * (point.y - a.y) - (b.y - a.y) * (point.x - a.x) <= 0) stack.pop();
+        else break;
+      }
+      stack.push(point);
+    }
+    return stack;
+  };
+  const lower = build(sorted);
+  const upper = build([...sorted].reverse());
+  return [...lower.slice(0, -1), ...upper.slice(0, -1)];
+}
+
+/** Garde au plus `max` sommets, en supprimant à chaque fois le sommet le moins « utile ». */
+function simplify(hull: Corner[], max: number): Corner[] {
+  const points = [...hull];
+  while (points.length > max) {
+    let worst = 0;
+    let worstLoss = Infinity;
+    for (let i = 0; i < points.length; i += 1) {
+      const a = points[(i - 1 + points.length) % points.length] as Corner;
+      const b = points[i] as Corner;
+      const c = points[(i + 1) % points.length] as Corner;
+      const loss = Math.abs((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)) / 2;
+      if (loss < worstLoss) {
+        worstLoss = loss;
+        worst = i;
+      }
+    }
+    points.splice(worst, 1);
+  }
+  return points;
+}
+
+function maxAreaQuad(hull: Corner[]): Corner[] | null {
+  const n = hull.length;
+  let best: Corner[] | null = null;
+  let bestArea = 0;
+  for (let i = 0; i < n - 3; i += 1) {
+    for (let j = i + 1; j < n - 2; j += 1) {
+      for (let k = j + 1; k < n - 1; k += 1) {
+        for (let l = k + 1; l < n; l += 1) {
+          const quad = [hull[i] as Corner, hull[j] as Corner, hull[k] as Corner, hull[l] as Corner];
+          const area = polygonArea(quad as Quad);
+          if (area > bestArea) {
+            bestArea = area;
+            best = quad;
+          }
+        }
+      }
+    }
+  }
+  return best;
+}
+
+/** Ordonne les 4 coins : haut-gauche, haut-droit, bas-droit, bas-gauche. */
+function orderQuad(quad: Corner[]): Quad {
+  const cx = quad.reduce((sum, p) => sum + p.x, 0) / 4;
+  const cy = quad.reduce((sum, p) => sum + p.y, 0) / 4;
+  const sorted = [...quad].sort((a, b) => Math.atan2(a.y - cy, a.x - cx) - Math.atan2(b.y - cy, b.x - cx));
+  let start = 0;
+  let bestSum = Infinity;
+  sorted.forEach((point, index) => {
+    const sum = point.x + point.y;
+    if (sum < bestSum) {
+      bestSum = sum;
+      start = index;
+    }
+  });
+  return [
+    sorted[start] as Corner,
+    sorted[(start + 1) % 4] as Corner,
+    sorted[(start + 2) % 4] as Corner,
+    sorted[(start + 3) % 4] as Corner,
+  ];
+}
+
 
 function otsu(gray: Uint8ClampedArray): number {
   const hist = new Array<number>(256).fill(0);
