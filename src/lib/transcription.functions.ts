@@ -42,7 +42,7 @@ const REVIEW_PROMPT = `Tu es relecteur. On te donne la même photo de page de co
 
 Réponds UNIQUEMENT avec le Markdown final corrigé, sans commentaire, sans balise de code autour (sauf les blocs \`graphique\`).`;
 
-const MODEL = "google/gemini-3.1-pro-preview";
+const MODEL = "openai/gpt-5.5";
 
 function readErrorMessage(status: number, body: string): string {
   let message = body.slice(0, 300);
