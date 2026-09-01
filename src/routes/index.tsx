@@ -172,7 +172,7 @@ function Index() {
     async (page: CoursePage) => {
       update(page.id, { status: "running", error: undefined });
       try {
-        const result = await runTranscription({ data: { imageDataUrl: page.imageDataUrl } });
+        const result = await runTranscription({ data: { imageDataUrl: page.imageDataUrl, style } });
         update(page.id, { status: "done", markdown: result.markdown });
       } catch (error) {
         update(page.id, {
