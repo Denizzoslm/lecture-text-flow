@@ -284,7 +284,37 @@ function otsu(gray: Uint8ClampedArray): number {
   return best;
 }
 
+/** Composante contenant le centre de l'image (repli : la plus grande). */
+function pageComponent(mask: Uint8Array, w: number, h: number): { pixels: number[]; size: number } | null {
+  const center = Math.floor(h / 2) * w + Math.floor(w / 2);
+  if (mask[center]) {
+    const seen = new Uint8Array(w * h);
+    const stack = [center];
+    seen[center] = 1;
+    const pixels: number[] = [];
+    while (stack.length) {
+      const index = stack.pop() as number;
+      pixels.push(index);
+      const x = index % w;
+      const y = (index - x) / w;
+      const push = (next: number) => {
+        if (mask[next] && !seen[next]) {
+          seen[next] = 1;
+          stack.push(next);
+        }
+      };
+      if (x > 0) push(index - 1);
+      if (x < w - 1) push(index + 1);
+      if (y > 0) push(index - w);
+      if (y < h - 1) push(index + w);
+    }
+    if (pixels.length > w * h * 0.18) return { pixels, size: pixels.length };
+  }
+  return largestComponent(mask, w, h);
+}
+
 function largestComponent(mask: Uint8Array, w: number, h: number): { pixels: number[]; size: number } | null {
+
   const seen = new Uint8Array(w * h);
   const stack: number[] = [];
   let best: { pixels: number[]; size: number } | null = null;
