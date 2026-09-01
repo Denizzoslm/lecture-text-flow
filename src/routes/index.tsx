@@ -49,6 +49,8 @@ function Index() {
   const [exporting, setExporting] = useState(false);
   const [cropId, setCropId] = useState<string | null>(null);
   const [aiScan, setAiScan] = useState(true);
+  const [style, setStyle] = useState<"fidele" | "propre">("fidele");
+  const [dragging, setDragging] = useState(false);
 
   const cameraRef = useRef<HTMLInputElement | null>(null);
   const galleryRef = useRef<HTMLInputElement | null>(null);
