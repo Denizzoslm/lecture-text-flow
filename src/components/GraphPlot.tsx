@@ -187,16 +187,75 @@ export function GraphPlot({ spec, width = 620, height = 380 }: { spec: GraphSpec
                 className="inline-block h-[2px] w-5 rounded-full"
                 style={{ backgroundColor: color(index) }}
               />
-              <span className="text-[11px] text-ink">{curve.label}</span>
+              <span className="text-[11px] text-ink">
+                <MathLabel text={curve.label ?? ""} />
+              </span>
             </div>
           ))}
         </div>
       ) : null}
       {spec.titre ? (
-        <figcaption className="mt-1 text-[11px] text-ink-soft">{spec.titre}</figcaption>
+        <figcaption className="mt-1 text-[11px] text-ink-soft">
+          <MathLabel text={spec.titre} />
+        </figcaption>
       ) : null}
     </figure>
   );
+}
+
+/** Affiche une étiquette mathématique simple : `4^x`, `x^{2}`, `*` -> exposants et ×. */
+function MathLabel({ text }: { text: string }) {
+  return (
+    <>
+      {parseLabel(text).map((part, index) =>
+        part.sup ? <sup key={index}>{part.text}</sup> : <span key={index}>{part.text}</span>,
+      )}
+    </>
+  );
+}
+
+type LabelPart = { text: string; sup?: boolean };
+
+function parseLabel(source: string): LabelPart[] {
+  const parts: LabelPart[] = [];
+  let buffer = "";
+  let i = 0;
+  const flush = () => {
+    if (buffer) parts.push({ text: buffer });
+    buffer = "";
+  };
+
+  while (i < source.length) {
+    const char = source[i]!;
+    if (char === "^") {
+      i++;
+      let exponent = "";
+      if (source[i] === "{" || source[i] === "(") {
+        const close = source[i] === "{" ? "}" : ")";
+        i++;
+        while (i < source.length && source[i] !== close) exponent += source[i++];
+        i++; // fermeture
+      } else {
+        while (i < source.length && /[A-Za-z0-9+\-.,]/.test(source[i]!)) exponent += source[i++];
+      }
+      if (exponent) {
+        flush();
+        parts.push({ text: exponent, sup: true });
+      } else {
+        buffer += "^";
+      }
+      continue;
+    }
+    if (char === "*") {
+      buffer += "\u00d7";
+      i++;
+      continue;
+    }
+    buffer += char;
+    i++;
+  }
+  flush();
+  return parts;
 }
 
 function ticks(min: number, max: number, step: number) {
