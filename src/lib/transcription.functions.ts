@@ -10,7 +10,7 @@ MÉTHODE OBLIGATOIRE :
 - NE CORRIGE RIEN : même si un calcul, un résultat, une orthographe ou une formule est faux, recopie-le tel quel (par exemple 5 × 0,861 écrit « 4,05 » reste « 4,05 »).
 - N'ajoute aucun calcul, aucune étape, aucune explication, aucune section, aucune conclusion, aucun commentaire.
 - N'invente aucun graphique ni aucune courbe qui ne serait pas dessiné sur la photo.
-- Recopie les nombres chiffre par chiffre, en gardant la virgule décimale française.
+- Recopie les nombres chiffre par chiffre, en gardant la virgule décimale française et EXACTEMENT le même nombre de décimales que sur la photo (zoome mentalement sur chaque cellule de tableau avant de l'écrire). N'ajoute jamais un chiffre manquant pour « rendre le calcul juste ».
 - Si un mot ou un symbole est vraiment illisible, écris [illisible].
 
 MISE EN PAGE (à reproduire fidèlement) :
