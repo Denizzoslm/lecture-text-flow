@@ -38,6 +38,7 @@ const REVIEW_PROMPT = `Tu es relecteur. On te donne la même photo de page de co
 - chaque nombre, chiffre par chiffre (virgule décimale française), y compris dans les tableaux ;
 - chaque formule LaTeX (indices, exposants, fractions, racines, parenthèses) ;
 - l'ordre et la présence de tous les éléments : titres, repères « A. », « a) », numéros, annotations de marge, légendes, flèches ;
+- la mise en forme des repères : numéros d'exercice/question en **gras**, sous-questions en lettres en éléments de liste (alinéa) quand elles sont décalées sur la photo ;
 - les tableaux : même nombre de colonnes/lignes, mêmes en-têtes, tableaux côte à côte gardés comme deux tableaux séparés par une seule ligne vide ;
 - les blocs \`graphique\` : ne garder que les graphiques réellement dessinés, avec la bonne fenêtre et les bonnes courbes/étiquettes ;
 - aucun ajout, aucune correction de calcul. INTERDIT de recalculer une valeur : tu ne changes un nombre que si tu vois clairement qu'il a été MAL LU sur la photo. Exemple : si la page écrit « 4,05 » alors que le calcul juste donnerait 4,305, tu gardes « 4,05 ».
