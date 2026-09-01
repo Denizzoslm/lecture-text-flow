@@ -93,20 +93,44 @@ export function PageCard({
 
       {showTranscription && (page.status !== "pending" || page.markdown) ? (
         <div className="mt-3 space-y-3">
-          <label className="block">
-            <span className="font-mono text-[11px] text-ink-soft">Markdown modifiable</span>
-            <textarea
-              value={page.markdown}
-              onChange={(event) => onChange(page.id, event.target.value)}
-              rows={6}
-              spellCheck={false}
-              placeholder="La retranscription apparaîtra ici…"
-              className="mt-1 w-full resize-y rounded border border-input bg-secondary/40 p-2 font-mono text-xs leading-relaxed text-ink outline-none focus:border-brick"
-            />
-          </label>
-          <div className="rounded border border-dashed border-border bg-card p-3">
-            <p className="mb-2 font-mono text-[11px] text-ink-soft">Aperçu</p>
-            <CourseContent markdown={page.markdown} />
+          {page.status === "done" ? (
+            <p className="font-mono text-[11px] text-sage">Retranscription terminée ✓</p>
+          ) : null}
+          {page.markdown.includes("[illisible]") ? (
+            <p
+              role="status"
+              className="rounded border border-brick/50 bg-brick/10 p-2 text-xs text-ink"
+            >
+              Certains éléments semblent ambigus ou illisibles. Vérifiez la retranscription et corrigez les
+              passages marqués « [illisible] ».
+            </p>
+          ) : null}
+          <div className="grid gap-3 md:grid-cols-2">
+            <figure className="m-0 rounded border border-border bg-white p-2">
+              <figcaption className="mb-2 font-mono text-[11px] text-ink-soft">Photo originale</figcaption>
+              <img
+                src={page.imageDataUrl}
+                alt={`Photo originale de la page ${index + 1}`}
+                className="w-full rounded object-contain"
+              />
+            </figure>
+            <div className="space-y-3">
+              <div className="rounded border border-dashed border-border bg-card p-3">
+                <p className="mb-2 font-mono text-[11px] text-ink-soft">Retranscription numérique</p>
+                <CourseContent markdown={page.markdown} />
+              </div>
+              <label className="block">
+                <span className="font-mono text-[11px] text-ink-soft">Modifier la retranscription</span>
+                <textarea
+                  value={page.markdown}
+                  onChange={(event) => onChange(page.id, event.target.value)}
+                  rows={8}
+                  spellCheck={false}
+                  placeholder="La retranscription apparaîtra ici…"
+                  className="mt-1 w-full resize-y rounded border border-input bg-secondary/40 p-2 font-mono text-xs leading-relaxed text-ink outline-none focus:border-brick"
+                />
+              </label>
+            </div>
           </div>
         </div>
       ) : null}

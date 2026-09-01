@@ -49,6 +49,8 @@ function Index() {
   const [exporting, setExporting] = useState(false);
   const [cropId, setCropId] = useState<string | null>(null);
   const [aiScan, setAiScan] = useState(true);
+  const [style, setStyle] = useState<"fidele" | "propre">("fidele");
+  const [dragging, setDragging] = useState(false);
 
   const cameraRef = useRef<HTMLInputElement | null>(null);
   const galleryRef = useRef<HTMLInputElement | null>(null);
@@ -170,7 +172,7 @@ function Index() {
     async (page: CoursePage) => {
       update(page.id, { status: "running", error: undefined });
       try {
-        const result = await runTranscription({ data: { imageDataUrl: page.imageDataUrl } });
+        const result = await runTranscription({ data: { imageDataUrl: page.imageDataUrl, style } });
         update(page.id, { status: "done", markdown: result.markdown });
       } catch (error) {
         update(page.id, {
@@ -179,7 +181,7 @@ function Index() {
         });
       }
     },
-    [runTranscription, update],
+    [runTranscription, style, update],
   );
 
   const transcribeAll = useCallback(async () => {
@@ -279,6 +281,25 @@ function Index() {
               contenu écrit. Appliqué automatiquement à chaque nouvelle photo.
             </span>
           </label>
+
+          {mode === "ai" ? (
+            <div className="mt-3 rounded border border-border bg-card p-3">
+              <p className="font-mono text-[11px] text-ink-soft">Style de retranscription</p>
+              <div className="mt-2 flex gap-2 rounded border border-border bg-secondary/40 p-1">
+                <ModeButton active={style === "fidele"} onClick={() => setStyle("fidele")}>
+                  Fidèle
+                </ModeButton>
+                <ModeButton active={style === "propre"} onClick={() => setStyle("propre")}>
+                  Propre
+                </ModeButton>
+              </div>
+              <p className="mt-2 text-xs text-ink-soft">
+                {style === "fidele"
+                  ? "Retranscrit exactement ce qui est écrit, dans le même ordre et la même structure."
+                  : "Même contenu (mêmes nombres, mêmes résultats) mais mise en page de document scolaire : titres hiérarchisés, questions alignées, formules centrées."}
+              </p>
+            </div>
+          ) : null}
         </fieldset>
 
         <div className="grid gap-3 sm:grid-cols-2">
@@ -302,6 +323,32 @@ function Index() {
           </label>
         </div>
 
+
+        <div
+          onDragOver={(event) => {
+            event.preventDefault();
+            setDragging(true);
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(event) => {
+            event.preventDefault();
+            setDragging(false);
+            void addFiles(event.dataTransfer.files);
+          }}
+          onClick={() => galleryRef.current?.click()}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") galleryRef.current?.click();
+          }}
+          className={`mt-4 cursor-pointer rounded border-2 border-dashed p-6 text-center transition-colors ${
+            dragging ? "border-brick bg-brick/10" : "border-border bg-card hover:bg-secondary/50"
+          }`}
+        >
+          <p className="text-sm font-medium text-ink">Dépose ta photo ici</p>
+          <p className="mt-1 text-xs text-ink-soft">ou sélectionne un fichier</p>
+          <p className="mt-2 font-mono text-[10px] text-ink-soft">JPG · JPEG · PNG · HEIC · WEBP</p>
+        </div>
 
         <div className="mt-4 flex flex-col gap-2 sm:flex-row">
           <button
@@ -388,6 +435,22 @@ function Index() {
             {enhancingCount > 0 ? ` · ${enhancingCount} rendu(s) scanner IA en cours…` : ""}
           </p>
 
+          {mode === "ai" && (busy || (doneCount > 0 && doneCount === pages.length)) ? (
+            <div className="mb-4" aria-live="polite">
+              <div className="h-1.5 w-full overflow-hidden rounded bg-secondary">
+                <div
+                  className="h-full bg-brick transition-all"
+                  style={{ width: `${Math.round((doneCount / Math.max(pages.length, 1)) * 100)}%` }}
+                />
+              </div>
+              <p className="mt-2 font-mono text-[11px] text-ink-soft">
+                {busy
+                  ? `Analyse IA en cours… ${doneCount}/${pages.length}`
+                  : "Retranscription terminée ✓"}
+              </p>
+            </div>
+          ) : null}
+
           <div className="space-y-4">
             {pages.map((page, index) => (
               <PageCard
@@ -456,7 +519,7 @@ function ModeButton({
 }: {
   active: boolean;
   onClick: () => void;
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
