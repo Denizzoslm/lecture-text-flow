@@ -1,18 +1,23 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const TRANSCRIPTION_PROMPT = `Tu vois la photo d'une page de cours de mathématiques (tableau ou cahier, écriture manuscrite ou imprimée). Ta seule mission est une retranscription STRICTEMENT FIDÈLE du contenu, en Markdown, en français.
+const TRANSCRIPTION_PROMPT = `Tu vois la photo d'une page de cours de mathématiques (tableau ou cahier, écriture manuscrite ou imprimée). Ta seule mission est une retranscription STRICTEMENT FIDÈLE à 100 % du contenu, en Markdown, en français.
 
-RÈGLE ABSOLUE DE FIDÉLITÉ :
-- Retranscris exactement ce qui est écrit, dans le même ordre et la même structure, sans rien ajouter, rien retirer, rien reformuler.
-- NE CORRIGE RIEN : même si un calcul, un résultat ou une formule est faux, recopie-le tel quel.
-- N'ajoute aucun calcul, aucune étape, aucune explication, aucune section supplémentaire, aucune conclusion.
+MÉTHODE OBLIGATOIRE :
+- Lis d'abord toute la page de haut en bas, zone par zone, puis retranscris dans l'ordre exact d'apparition.
+- Ne saute AUCUN élément : titres, numéros de page, numéros d'exercices, annotations en marge, tableaux, graphiques, flèches, légendes.
+- Retranscris exactement ce qui est écrit, sans rien ajouter, rien retirer, rien reformuler, rien réorganiser.
+- NE CORRIGE RIEN : même si un calcul, un résultat, une orthographe ou une formule est faux, recopie-le tel quel (par exemple 5 × 0,861 écrit « 4,05 » reste « 4,05 »).
+- N'ajoute aucun calcul, aucune étape, aucune explication, aucune section, aucune conclusion, aucun commentaire.
 - N'invente aucun graphique ni aucune courbe qui ne serait pas dessiné sur la photo.
-- Si un mot ou un symbole est illisible, écris [illisible].
-- Conserve la mise en page : titres, numéros d'exercices, listes, encadrés (utilise > pour un encadré), soulignements repris en **gras**, tableaux en Markdown.
+- Recopie les nombres chiffre par chiffre, en gardant la virgule décimale française.
+- Si un mot ou un symbole est vraiment illisible, écris [illisible].
 
-MISE EN FORME :
-- '# ' uniquement si un titre principal est visible sur la page ; '## ' pour les sections visibles, '### ' pour les sous-parties visibles.
+MISE EN PAGE (à reproduire fidèlement) :
+- '# ' uniquement si un titre principal est visible ; '## ' pour les sections visibles, '### ' pour les sous-parties visibles.
+- Conserve les repères de structure tels qu'écrits : « A. », « a) », « b) », « 1° », listes à puces, etc.
+- Encadrés : utilise > . Soulignements : reprends-les en **gras**.
+- TABLEAUX : un tableau Markdown distinct par tableau dessiné, chacun avec sa propre ligne d'en-tête. Si deux tableaux sont côte à côte sur la page, écris-les l'un après l'autre séparés UNIQUEMENT par une ligne vide (jamais de texte, de titre ni de trait entre eux) : ils seront réaffichés côte à côte. Ne fusionne jamais deux tableaux en un seul. Garde exactement les mêmes en-têtes, le même nombre de lignes et les mêmes valeurs.
 - Toutes les formules et expressions mathématiques en LaTeX : $...$ en ligne, $$...$$ pour une formule isolée ou centrée sur la page.
 - Aucun commentaire de ta part, uniquement le contenu de la page.
 
@@ -23,9 +28,10 @@ Si un repère, une courbe ou un graphique est effectivement tracé sur la photo,
 {"titre":"Courbe de f","xmin":-5,"xmax":5,"ymin":-4,"ymax":8,"courbes":[{"expr":"x^2-2*x","label":"f(x)=x^2-2x"}],"points":[{"x":1,"y":-1,"label":"S"}]}
 \`\`\`
 
-Règles pour les blocs \`graphique\` : "expr" est une expression JavaScript/mathjs de la variable x (utilise *, /, ^, sqrt(x), abs(x), exp(x), log(x), sin(x)...), jamais du LaTeX. Reprends la fenêtre xmin/xmax/ymin/ymax du repère dessiné. "points" et "titre" sont optionnels. Ne mets aucun texte autour du JSON dans le bloc. Si aucun graphique n'est dessiné, n'écris aucun bloc \`graphique\`.`;
+Règles pour les blocs \`graphique\` : "expr" est une expression JavaScript/mathjs de la variable x (utilise *, /, ^, sqrt(x), abs(x), exp(x), log(x), sin(x)...), jamais du LaTeX. Reprends la fenêtre xmin/xmax/ymin/ymax du repère dessiné, ainsi que toutes les courbes tracées avec leurs étiquettes exactes. "points" et "titre" sont optionnels. Ne mets aucun texte autour du JSON dans le bloc. Si aucun graphique n'est dessiné, n'écris aucun bloc \`graphique\`.`;
 
-const MODEL = "google/gemini-3.7-flash";
+const MODEL = "google/gemini-3.1-pro-preview";
+
 
 export const transcribePage = createServerFn({ method: "POST" })
   .inputValidator((data) =>
@@ -51,6 +57,8 @@ export const transcribePage = createServerFn({ method: "POST" })
         },
         body: JSON.stringify({
           model: MODEL,
+          temperature: 0,
+
           messages: [
             {
               role: "user",
