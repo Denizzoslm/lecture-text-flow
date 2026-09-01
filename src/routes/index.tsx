@@ -66,6 +66,7 @@ function Index() {
       try {
         const result = await runEnhance({ data: { imageDataUrl: dataUrl } });
         update(id, { imageDataUrl: result.imageDataUrl, aiEnhanced: true, enhancing: false });
+        toast.success("Rendu scanner appliqué.");
         return true;
       } catch (error) {
         update(id, { enhancing: false });
@@ -79,7 +80,9 @@ function Index() {
   const enhanceById = useCallback(
     (id: string) => {
       const page = pages.find((item) => item.id === id);
-      if (page && !page.enhancing) void enhanceOne(id, page.imageDataUrl);
+      if (page && !page.enhancing) {
+        void enhanceOne(id, page.aiEnhanced || !page.quad ? page.sourceDataUrl : page.imageDataUrl);
+      }
     },
     [enhanceOne, pages],
   );
@@ -115,7 +118,7 @@ function Index() {
         toast.info("Rendu « scanner d'imprimante » par l'IA en cours…");
         void (async () => {
           for (const page of converted) {
-            await enhanceOne(page.id, page.imageDataUrl);
+            await enhanceOne(page.id, page.quad ? page.imageDataUrl : page.sourceDataUrl);
           }
         })();
       }
@@ -199,6 +202,8 @@ function Index() {
     },
     [pages, transcribeOne],
   );
+
+  const enhancingCount = pages.filter((page) => page.enhancing).length;
 
   const exportPdf = useCallback(async () => {
     const element = printRef.current;
@@ -346,7 +351,7 @@ function Index() {
               <button
                 type="button"
                 onClick={() => void exportScannedPdf()}
-                disabled={exporting || scanning}
+                disabled={exporting || scanning || enhancingCount > 0}
                 className="inline-flex flex-1 items-center justify-center gap-2 rounded border border-brick bg-brick px-4 py-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
               >
                 <FileDown className="size-4" />
@@ -357,7 +362,7 @@ function Index() {
                 <button
                   type="button"
                   onClick={() => void transcribeAll()}
-                  disabled={busy || scanning}
+                  disabled={busy || scanning || enhancingCount > 0}
                   className="inline-flex flex-1 items-center justify-center gap-2 rounded border border-brick bg-brick px-4 py-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
                 >
                   <ScanText className="size-4" />
@@ -380,6 +385,7 @@ function Index() {
             {pages.length} page(s) scannée(s)
             {mode === "ai" ? ` · ${doneCount} retranscrite(s)` : ""}
             {scanning ? " · scan en cours…" : ""}
+            {enhancingCount > 0 ? ` · ${enhancingCount} rendu(s) scanner IA en cours…` : ""}
           </p>
 
           <div className="space-y-4">
