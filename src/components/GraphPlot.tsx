@@ -109,6 +109,9 @@ export function GraphPlot({ spec, width = 480, height = 300 }: { spec: GraphSpec
         }
       }
       ctx.stroke();
+    });
+
+
 
 
     // points remarquables
