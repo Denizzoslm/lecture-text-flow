@@ -56,6 +56,34 @@ function Index() {
   const runTranscription = useServerFn(transcribePage);
   const runEnhance = useServerFn(enhanceScan);
 
+  const update = useCallback((id: string, patch: Partial<CoursePage>) => {
+    setPages((current) => current.map((page) => (page.id === id ? { ...page, ...patch } : page)));
+  }, []);
+
+  const enhanceOne = useCallback(
+    async (id: string, dataUrl: string) => {
+      update(id, { enhancing: true });
+      try {
+        const result = await runEnhance({ data: { imageDataUrl: dataUrl } });
+        update(id, { imageDataUrl: result.imageDataUrl, aiEnhanced: true, enhancing: false });
+        return true;
+      } catch (error) {
+        update(id, { enhancing: false });
+        toast.error(error instanceof Error ? error.message : "Le scan IA a échoué.");
+        return false;
+      }
+    },
+    [runEnhance, update],
+  );
+
+  const enhanceById = useCallback(
+    (id: string) => {
+      const page = pages.find((item) => item.id === id);
+      if (page && !page.enhancing) void enhanceOne(id, page.imageDataUrl);
+    },
+    [enhanceOne, pages],
+  );
+
   const addFiles = useCallback(async (files: FileList | null) => {
     if (!files?.length) return;
     setScanning(true);
@@ -98,34 +126,6 @@ function Index() {
       }
     }
   }, [aiScan, enhanceOne]);
-
-  const update = useCallback((id: string, patch: Partial<CoursePage>) => {
-    setPages((current) => current.map((page) => (page.id === id ? { ...page, ...patch } : page)));
-  }, []);
-
-  const enhanceOne = useCallback(
-    async (id: string, dataUrl: string) => {
-      update(id, { enhancing: true });
-      try {
-        const result = await runEnhance({ data: { imageDataUrl: dataUrl } });
-        update(id, { imageDataUrl: result.imageDataUrl, aiEnhanced: true, enhancing: false });
-        return true;
-      } catch (error) {
-        update(id, { enhancing: false });
-        toast.error(error instanceof Error ? error.message : "Le scan IA a échoué.");
-        return false;
-      }
-    },
-    [runEnhance, update],
-  );
-
-  const enhanceById = useCallback(
-    (id: string) => {
-      const page = pages.find((item) => item.id === id);
-      if (page && !page.enhancing) void enhanceOne(id, page.imageDataUrl);
-    },
-    [enhanceOne, pages],
-  );
 
   const move = useCallback((id: string, direction: -1 | 1) => {
     setPages((current) => {
