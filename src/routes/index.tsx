@@ -271,7 +271,7 @@ function Index() {
           type="file"
           accept="image/*"
           capture="environment"
-          className="hidden"
+          className="sr-only"
           onChange={(event) => {
             void addFiles(event.target.files);
             event.target.value = "";
@@ -282,7 +282,7 @@ function Index() {
           type="file"
           accept="image/*"
           multiple
-          className="hidden"
+          className="sr-only"
           onChange={(event) => {
             void addFiles(event.target.files);
             event.target.value = "";
