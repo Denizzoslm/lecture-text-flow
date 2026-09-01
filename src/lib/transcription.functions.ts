@@ -10,7 +10,7 @@ MÉTHODE OBLIGATOIRE :
 - NE CORRIGE RIEN : même si un calcul, un résultat, une orthographe ou une formule est faux, recopie-le tel quel (par exemple 5 × 0,861 écrit « 4,05 » reste « 4,05 »).
 - N'ajoute aucun calcul, aucune étape, aucune explication, aucune section, aucune conclusion, aucun commentaire.
 - N'invente aucun graphique ni aucune courbe qui ne serait pas dessiné sur la photo.
-- Recopie les nombres chiffre par chiffre, en gardant la virgule décimale française.
+- Recopie les nombres chiffre par chiffre, en gardant la virgule décimale française et EXACTEMENT le même nombre de décimales que sur la photo (zoome mentalement sur chaque cellule de tableau avant de l'écrire). N'ajoute jamais un chiffre manquant pour « rendre le calcul juste ».
 - Si un mot ou un symbole est vraiment illisible, écris [illisible].
 
 MISE EN PAGE (à reproduire fidèlement) :
@@ -30,8 +30,72 @@ Si un repère, une courbe ou un graphique est effectivement tracé sur la photo,
 
 Règles pour les blocs \`graphique\` : "expr" est une expression JavaScript/mathjs de la variable x (utilise *, /, ^, sqrt(x), abs(x), exp(x), log(x), sin(x)...), jamais du LaTeX. Reprends la fenêtre xmin/xmax/ymin/ymax du repère dessiné, ainsi que toutes les courbes tracées avec leurs étiquettes exactes. "points" et "titre" sont optionnels. Ne mets aucun texte autour du JSON dans le bloc. Si aucun graphique n'est dessiné, n'écris aucun bloc \`graphique\`.`;
 
+const REVIEW_PROMPT = `Tu es relecteur. On te donne la même photo de page de cours et une première retranscription Markdown de cette page. Compare-les ligne par ligne et rends la VERSION CORRIGÉE de la retranscription.
+
+À vérifier impérativement :
+- chaque nombre, chiffre par chiffre (virgule décimale française), y compris dans les tableaux ;
+- chaque formule LaTeX (indices, exposants, fractions, racines, parenthèses) ;
+- l'ordre et la présence de tous les éléments : titres, repères « A. », « a) », numéros, annotations de marge, légendes, flèches ;
+- les tableaux : même nombre de colonnes/lignes, mêmes en-têtes, tableaux côte à côte gardés comme deux tableaux séparés par une seule ligne vide ;
+- les blocs \`graphique\` : ne garder que les graphiques réellement dessinés, avec la bonne fenêtre et les bonnes courbes/étiquettes ;
+- aucun ajout, aucune correction de calcul. INTERDIT de recalculer une valeur : tu ne changes un nombre que si tu vois clairement qu'il a été MAL LU sur la photo. Exemple : si la page écrit « 4,05 » alors que le calcul juste donnerait 4,305, tu gardes « 4,05 ».
+
+Réponds UNIQUEMENT avec le Markdown final corrigé, sans commentaire, sans balise de code autour (sauf les blocs \`graphique\`).`;
+
 const MODEL = "google/gemini-3.1-pro-preview";
 
+function readErrorMessage(status: number, body: string): string {
+  let message = body.slice(0, 300);
+  try {
+    const parsed = JSON.parse(body) as { error?: { message?: string }; message?: string };
+    message = parsed.error?.message ?? parsed.message ?? message;
+  } catch {
+    /* texte brut */
+  }
+  if (status === 429) return "Trop de pages envoyées en même temps. Réessayez dans quelques instants.";
+  if (status === 402) return message || "Crédits d'IA épuisés pour cet espace de travail.";
+  if (status === 403) return message || "L'accès au service d'IA est bloqué pour cet espace de travail.";
+  return message || `Échec de la retranscription (erreur ${status}).`;
+}
+
+async function askGateway(
+  apiKey: string,
+  content: Array<Record<string, unknown>>,
+): Promise<string | null> {
+  let response: Response;
+  try {
+    response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        temperature: 0,
+        messages: [{ role: "user", content }],
+      }),
+    });
+  } catch {
+    throw new Error("Impossible de joindre le service de retranscription. Vérifiez la connexion.");
+  }
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => "");
+    throw new Error(readErrorMessage(response.status, body));
+  }
+
+  const payload = (await response.json()) as {
+    choices?: Array<{ message?: { content?: string } }>;
+  };
+  const text = payload.choices?.[0]?.message?.content?.trim();
+  return text && text.length > 0 ? text : null;
+}
+
+function stripCodeFence(markdown: string): string {
+  const fenced = markdown.match(/^```(?:markdown|md)?\n([\s\S]*)\n```$/);
+  return fenced?.[1]?.trim() ?? markdown;
+}
 
 export const transcribePage = createServerFn({ method: "POST" })
   .inputValidator((data) =>
@@ -47,60 +111,24 @@ export const transcribePage = createServerFn({ method: "POST" })
       throw new Error("La clé du service d'IA est absente. Contactez l'administrateur du site.");
     }
 
-    let response: Response;
-    try {
-      response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: MODEL,
-          temperature: 0,
+    const image = { type: "image_url", image_url: { url: data.imageDataUrl } };
 
-          messages: [
-            {
-              role: "user",
-              content: [
-                { type: "text", text: TRANSCRIPTION_PROMPT },
-                { type: "image_url", image_url: { url: data.imageDataUrl } },
-              ],
-            },
-          ],
-        }),
-      });
-    } catch {
-      throw new Error("Impossible de joindre le service de retranscription. Vérifiez la connexion.");
-    }
-
-    if (!response.ok) {
-      const body = await response.text().catch(() => "");
-      let message = body.slice(0, 300);
-      try {
-        const parsed = JSON.parse(body) as { error?: { message?: string }; message?: string };
-        message = parsed.error?.message ?? parsed.message ?? message;
-      } catch {
-        /* texte brut */
-      }
-      if (response.status === 429) {
-        throw new Error("Trop de pages envoyées en même temps. Réessayez dans quelques instants.");
-      }
-      if (response.status === 402) {
-        throw new Error(message || "Crédits d'IA épuisés pour cet espace de travail.");
-      }
-      if (response.status === 403) {
-        throw new Error(message || "L'accès au service d'IA est bloqué pour cet espace de travail.");
-      }
-      throw new Error(message || `Échec de la retranscription (erreur ${response.status}).`);
-    }
-
-    const payload = (await response.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
-    };
-    const markdown = payload.choices?.[0]?.message?.content?.trim();
-    if (!markdown) {
+    const draft = await askGateway(apiKey, [{ type: "text", text: TRANSCRIPTION_PROMPT }, image]);
+    if (!draft) {
       throw new Error("La retranscription est revenue vide. Reprenez la photo si elle est floue.");
     }
+
+    // Deuxième passage : l'IA relit sa propre transcription face à la photo.
+    let reviewed: string | null = null;
+    try {
+      reviewed = await askGateway(apiKey, [
+        { type: "text", text: `${REVIEW_PROMPT}\n\n--- PREMIÈRE RETRANSCRIPTION ---\n${draft}` },
+        image,
+      ]);
+    } catch {
+      reviewed = null;
+    }
+
+    const markdown = stripCodeFence((reviewed ?? draft).trim());
     return { markdown };
   });
