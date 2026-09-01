@@ -181,7 +181,7 @@ function Index() {
         });
       }
     },
-    [runTranscription, update],
+    [runTranscription, style, update],
   );
 
   const transcribeAll = useCallback(async () => {
