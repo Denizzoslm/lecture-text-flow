@@ -58,22 +58,25 @@ function readErrorMessage(status: number, body: string): string {
   return message || `Échec de la retranscription (erreur ${status}).`;
 }
 
-async function askGateway(
-  apiKey: string,
-  content: Array<Record<string, unknown>>,
-): Promise<string | null> {
+type ResponsePart = { type: "input_text"; text: string } | { type: "input_image"; image_url: string };
+
+/** Appel OpenAI via l'API Responses de la passerelle (streaming obligatoire). */
+async function askGateway(apiKey: string, content: ResponsePart[]): Promise<string | null> {
   let response: Response;
   try {
-    response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    response = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+        "Lovable-API-Key": apiKey,
+        "X-Lovable-AIG-SDK": "fetch",
       },
       body: JSON.stringify({
         model: MODEL,
-        temperature: 0,
-        messages: [{ role: "user", content }],
+        input: [{ role: "user", content }],
+        stream: true,
+        store: false,
+        reasoning: { effort: "medium", summary: "auto" },
       }),
     });
   } catch {
@@ -84,12 +87,44 @@ async function askGateway(
     const body = await response.text().catch(() => "");
     throw new Error(readErrorMessage(response.status, body));
   }
+  if (!response.body) throw new Error("Réponse vide du service de retranscription.");
 
-  const payload = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-  };
-  const text = payload.choices?.[0]?.message?.content?.trim();
-  return text && text.length > 0 ? text : null;
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let text = "";
+  let completed = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      if (!line.startsWith("data:")) continue;
+      const payload = line.slice(5).trim();
+      if (!payload || payload === "[DONE]") continue;
+      let event: {
+        type?: string;
+        delta?: string;
+        response?: { output_text?: string };
+      };
+      try {
+        event = JSON.parse(payload);
+      } catch {
+        continue;
+      }
+      if (event.type === "response.output_text.delta" && typeof event.delta === "string") {
+        text += event.delta;
+      } else if (event.type === "response.completed" && event.response?.output_text) {
+        completed = event.response.output_text;
+      }
+    }
+  }
+
+  const final = (text || completed).trim();
+  return final.length > 0 ? final : null;
 }
 
 function stripCodeFence(markdown: string): string {
