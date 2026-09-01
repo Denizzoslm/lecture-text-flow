@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, RefreshCw, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Crop, RefreshCw, Trash2 } from "lucide-react";
 import { CourseContent } from "./CourseContent";
 import type { CoursePage } from "@/lib/pages";
 import { statusLabel } from "@/lib/pages";
@@ -7,9 +7,11 @@ type Props = {
   page: CoursePage;
   index: number;
   total: number;
+  showTranscription: boolean;
   onMove: (id: string, direction: -1 | 1) => void;
   onRemove: (id: string) => void;
   onRetry: (id: string) => void;
+  onAdjust: (id: string) => void;
   onChange: (id: string, markdown: string) => void;
 };
 
@@ -20,41 +22,63 @@ const statusStyles: Record<CoursePage["status"], string> = {
   error: "text-destructive",
 };
 
-export function PageCard({ page, index, total, onMove, onRemove, onRetry, onChange }: Props) {
+export function PageCard({
+  page,
+  index,
+  total,
+  showTranscription,
+  onMove,
+  onRemove,
+  onRetry,
+  onAdjust,
+  onChange,
+}: Props) {
   return (
     <article className="sheet p-3">
       <header className="flex items-start gap-3">
         <img
           src={page.imageDataUrl}
-          alt={`Aperçu de la page ${index + 1}`}
-          className="h-20 w-16 flex-none rounded border border-border object-cover"
+          alt={`Page scannée ${index + 1}`}
+          className="h-20 w-16 flex-none rounded border border-border bg-white object-cover"
         />
         <div className="min-w-0 flex-1">
           <p className="font-mono text-xs tracking-tight text-ink-soft">Page {index + 1}</p>
-          <p className={`font-mono text-xs ${statusStyles[page.status]}`}>{statusLabel(page.status)}</p>
+          {page.quad ? (
+            <p className="font-mono text-[11px] text-sage">scan redressé</p>
+          ) : (
+            <p className="font-mono text-[11px] text-ink-soft">recadrage auto indisponible</p>
+          )}
+          {showTranscription ? (
+            <p className={`font-mono text-xs ${statusStyles[page.status]}`}>{statusLabel(page.status)}</p>
+          ) : null}
           {page.error ? <p className="mt-1 text-xs text-destructive">{page.error}</p> : null}
         </div>
-        <div className="flex flex-none items-center gap-1">
+        <div className="flex flex-none flex-wrap items-center justify-end gap-1">
           <IconButton label="Monter" disabled={index === 0} onClick={() => onMove(page.id, -1)}>
             <ArrowUp className="size-4" />
           </IconButton>
           <IconButton label="Descendre" disabled={index === total - 1} onClick={() => onMove(page.id, 1)}>
             <ArrowDown className="size-4" />
           </IconButton>
-          <IconButton
-            label="Relancer la retranscription"
-            disabled={page.status === "running"}
-            onClick={() => onRetry(page.id)}
-          >
-            <RefreshCw className="size-4" />
+          <IconButton label="Ajuster le recadrage" onClick={() => onAdjust(page.id)}>
+            <Crop className="size-4" />
           </IconButton>
+          {showTranscription ? (
+            <IconButton
+              label="Relancer la retranscription"
+              disabled={page.status === "running"}
+              onClick={() => onRetry(page.id)}
+            >
+              <RefreshCw className="size-4" />
+            </IconButton>
+          ) : null}
           <IconButton label="Supprimer" onClick={() => onRemove(page.id)}>
             <Trash2 className="size-4 text-destructive" />
           </IconButton>
         </div>
       </header>
 
-      {page.status !== "pending" || page.markdown ? (
+      {showTranscription && (page.status !== "pending" || page.markdown) ? (
         <div className="mt-3 space-y-3">
           <label className="block">
             <span className="font-mono text-[11px] text-ink-soft">Markdown modifiable</span>
