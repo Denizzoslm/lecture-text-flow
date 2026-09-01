@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Crop, RefreshCw, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Crop, RefreshCw, Sparkles, Trash2 } from "lucide-react";
 import { CourseContent } from "./CourseContent";
 import type { CoursePage } from "@/lib/pages";
 import { statusLabel } from "@/lib/pages";
@@ -12,6 +12,7 @@ type Props = {
   onRemove: (id: string) => void;
   onRetry: (id: string) => void;
   onAdjust: (id: string) => void;
+  onEnhance: (id: string) => void;
   onChange: (id: string, markdown: string) => void;
 };
 
@@ -31,6 +32,7 @@ export function PageCard({
   onRemove,
   onRetry,
   onAdjust,
+  onEnhance,
   onChange,
 }: Props) {
   return (
@@ -43,7 +45,11 @@ export function PageCard({
         />
         <div className="min-w-0 flex-1">
           <p className="font-mono text-xs tracking-tight text-ink-soft">Page {index + 1}</p>
-          {page.quad ? (
+          {page.enhancing ? (
+            <p className="font-mono text-[11px] text-brick">scan IA en cours…</p>
+          ) : page.aiEnhanced ? (
+            <p className="font-mono text-[11px] text-sage">scan IA (rendu imprimante)</p>
+          ) : page.quad ? (
             <p className="font-mono text-[11px] text-sage">scan redressé</p>
           ) : (
             <p className="font-mono text-[11px] text-ink-soft">recadrage auto indisponible</p>
@@ -62,6 +68,13 @@ export function PageCard({
           </IconButton>
           <IconButton label="Ajuster le recadrage" onClick={() => onAdjust(page.id)}>
             <Crop className="size-4" />
+          </IconButton>
+          <IconButton
+            label="Rendu scanner par l'IA"
+            disabled={page.enhancing === true}
+            onClick={() => onEnhance(page.id)}
+          >
+            <Sparkles className={`size-4 ${page.aiEnhanced ? "text-sage" : ""}`} />
           </IconButton>
           {showTranscription ? (
             <IconButton

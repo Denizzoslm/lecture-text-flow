@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import "katex/dist/katex.min.css";
 
 import { transcribePage } from "@/lib/transcription.functions";
+import { enhanceScan } from "@/lib/scan-ai.functions";
 import { rescanFromQuad, scanFile, type Quad } from "@/lib/scan";
 import { newId, type CoursePage } from "@/lib/pages";
 import { printDocument } from "@/lib/pdf";
@@ -47,11 +48,41 @@ function Index() {
   const [scanning, setScanning] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [cropId, setCropId] = useState<string | null>(null);
+  const [aiScan, setAiScan] = useState(true);
 
   const cameraRef = useRef<HTMLInputElement | null>(null);
   const galleryRef = useRef<HTMLInputElement | null>(null);
   const printRef = useRef<HTMLDivElement | null>(null);
   const runTranscription = useServerFn(transcribePage);
+  const runEnhance = useServerFn(enhanceScan);
+
+  const update = useCallback((id: string, patch: Partial<CoursePage>) => {
+    setPages((current) => current.map((page) => (page.id === id ? { ...page, ...patch } : page)));
+  }, []);
+
+  const enhanceOne = useCallback(
+    async (id: string, dataUrl: string) => {
+      update(id, { enhancing: true });
+      try {
+        const result = await runEnhance({ data: { imageDataUrl: dataUrl } });
+        update(id, { imageDataUrl: result.imageDataUrl, aiEnhanced: true, enhancing: false });
+        return true;
+      } catch (error) {
+        update(id, { enhancing: false });
+        toast.error(error instanceof Error ? error.message : "Le scan IA a échoué.");
+        return false;
+      }
+    },
+    [runEnhance, update],
+  );
+
+  const enhanceById = useCallback(
+    (id: string) => {
+      const page = pages.find((item) => item.id === id);
+      if (page && !page.enhancing) void enhanceOne(id, page.imageDataUrl);
+    },
+    [enhanceOne, pages],
+  );
 
   const addFiles = useCallback(async (files: FileList | null) => {
     if (!files?.length) return;
@@ -80,17 +111,21 @@ function Index() {
     if (converted.length) {
       setPages((current) => [...current, ...converted]);
       toast.success(`${converted.length} page(s) scannée(s).`);
+      if (aiScan) {
+        toast.info("Rendu « scanner d'imprimante » par l'IA en cours…");
+        void (async () => {
+          for (const page of converted) {
+            await enhanceOne(page.id, page.imageDataUrl);
+          }
+        })();
+      }
       if (failedCrop) {
         toast.info(
           `${failedCrop} page(s) sans recadrage automatique : utilisez « Ajuster le recadrage » si besoin.`,
         );
       }
     }
-  }, []);
-
-  const update = useCallback((id: string, patch: Partial<CoursePage>) => {
-    setPages((current) => current.map((page) => (page.id === id ? { ...page, ...patch } : page)));
-  }, []);
+  }, [aiScan, enhanceOne]);
 
   const move = useCallback((id: string, direction: -1 | 1) => {
     setPages((current) => {
@@ -118,13 +153,14 @@ function Index() {
       if (!page) return;
       try {
         const scanDataUrl = await rescanFromQuad(page.sourceDataUrl, quad);
-        update(id, { imageDataUrl: scanDataUrl, quad });
+        update(id, { imageDataUrl: scanDataUrl, quad, aiEnhanced: false });
         toast.success("Page rescannée avec le nouveau recadrage.");
+        if (aiScan || page.aiEnhanced) await enhanceOne(id, scanDataUrl);
       } catch {
         toast.error("Le rescan a échoué.");
       }
     },
-    [pages, update],
+    [aiScan, enhanceOne, pages, update],
   );
 
   const transcribeOne = useCallback(
@@ -225,6 +261,19 @@ function Index() {
               ? "Les pages nettoyées sont assemblées telles quelles dans un PDF A4, sans appel à l'IA."
               : "Chaque page scannée est retranscrite en Markdown + LaTeX, modifiable avant export."}
           </p>
+          <label className="mt-3 flex items-start gap-2 rounded border border-dashed border-border bg-card p-3">
+            <input
+              type="checkbox"
+              checked={aiScan}
+              onChange={(event) => setAiScan(event.target.checked)}
+              className="mt-0.5 size-4 accent-[hsl(var(--brick))]"
+            />
+            <span className="text-xs text-ink-soft">
+              <span className="block text-sm font-medium text-ink">Rendu « scanner d'imprimante » par l'IA</span>
+              L'IA redresse la feuille, efface l'arrière-plan et les ombres et rend un fond blanc net — sans toucher au
+              contenu écrit. Appliqué automatiquement à chaque nouvelle photo.
+            </span>
+          </label>
         </fieldset>
 
         <div className="grid gap-3 sm:grid-cols-2">
@@ -345,6 +394,7 @@ function Index() {
                 onRemove={remove}
                 onRetry={retry}
                 onAdjust={setCropId}
+                onEnhance={enhanceById}
                 onChange={(id, markdown) => update(id, { markdown })}
               />
             ))}

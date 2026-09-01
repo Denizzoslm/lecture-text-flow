@@ -15,6 +15,10 @@ export type CoursePage = {
   markdown: string;
   status: PageStatus;
   error?: string | undefined;
+  /** L'image a été nettoyée par l'IA (rendu « scanner d'imprimante »). */
+  aiEnhanced?: boolean;
+  /** Nettoyage IA en cours pour cette page. */
+  enhancing?: boolean;
 };
 
 export function statusLabel(status: PageStatus): string {
