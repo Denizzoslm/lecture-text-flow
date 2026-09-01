@@ -131,23 +131,14 @@ function Index() {
     if (!element) return;
     setExporting(true);
     try {
-      const { default: html2pdf } = await import("html2pdf.js");
-      await html2pdf()
-        .set({
-          margin: [14, 12, 14, 12],
-          filename: `${(title || "cahier-numerique").replace(/[^\w\-À-ÿ ]+/g, "").trim() || "cahier-numerique"}.pdf`,
-          image: { type: "jpeg", quality: 0.95 },
-          html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
-          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        })
-        .from(element)
-        .save();
+      await printDocument(element, title, meta);
     } catch {
       toast.error("L'export PDF a échoué. Réessayez depuis un navigateur récent.");
     } finally {
       setExporting(false);
     }
-  }, [title]);
+  }, [title, meta]);
+
 
   const doneCount = pages.filter((page) => page.status === "done").length;
 
