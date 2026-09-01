@@ -30,7 +30,9 @@ export async function printDocument(source: HTMLElement, title: string, meta: st
   html, body { background: #fff; margin: 0; }
   body { color: #2d3f63; font-family: Inter, system-ui, sans-serif; font-size: 11pt; }
   #doc { width: auto !important; padding: 0 !important; }
-  img, canvas, .katex-display { break-inside: avoid; page-break-inside: avoid; }
+  img, canvas, .katex-display, table { break-inside: avoid; page-break-inside: avoid; }
+  .prose-cahier table { display: inline-table; vertical-align: top; margin: 0.6em 1em 0.6em 0; }
+
   section { break-after: page; page-break-after: always; }
   section:last-of-type { break-after: auto; page-break-after: auto; }
 </style></head><body>${clone.innerHTML}</body></html>`;
