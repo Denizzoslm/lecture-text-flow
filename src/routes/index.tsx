@@ -293,28 +293,44 @@ function Index() {
       {pages.length > 0 ? (
         <>
           <div className="mb-4 flex flex-col gap-2 sm:flex-row">
-            <button
-              type="button"
-              onClick={() => void transcribeAll()}
-              disabled={busy}
-              className="inline-flex flex-1 items-center justify-center gap-2 rounded border border-brick bg-brick px-4 py-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
-            >
-              <ScanText className="size-4" />
-              {busy ? "Retranscription en cours…" : "Retranscrire les photos"}
-            </button>
-            <button
-              type="button"
-              onClick={() => void exportPdf()}
-              disabled={exporting || doneCount === 0}
-              className="inline-flex flex-1 items-center justify-center gap-2 rounded border border-border bg-card px-4 py-3 text-sm font-medium text-ink transition-colors hover:bg-secondary disabled:opacity-50"
-            >
-              <FileDown className="size-4" />
-              {exporting ? "Préparation du PDF…" : "Télécharger le PDF"}
-            </button>
+            {mode === "scan" ? (
+              <button
+                type="button"
+                onClick={() => void exportScannedPdf()}
+                disabled={exporting || scanning}
+                className="inline-flex flex-1 items-center justify-center gap-2 rounded border border-brick bg-brick px-4 py-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                <FileDown className="size-4" />
+                {exporting ? "Assemblage du PDF…" : "Télécharger le PDF scanné"}
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => void transcribeAll()}
+                  disabled={busy || scanning}
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded border border-brick bg-brick px-4 py-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+                >
+                  <ScanText className="size-4" />
+                  {busy ? "Retranscription en cours…" : "Retranscrire avec l'IA"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void exportPdf()}
+                  disabled={exporting || doneCount === 0}
+                  className="inline-flex flex-1 items-center justify-center gap-2 rounded border border-border bg-card px-4 py-3 text-sm font-medium text-ink transition-colors hover:bg-secondary disabled:opacity-50"
+                >
+                  <FileDown className="size-4" />
+                  {exporting ? "Préparation du PDF…" : "Télécharger le PDF retranscrit"}
+                </button>
+              </>
+            )}
           </div>
 
           <p className="mb-3 font-mono text-[11px] text-ink-soft">
-            {pages.length} page(s) · {doneCount} retranscrite(s)
+            {pages.length} page(s) scannée(s)
+            {mode === "ai" ? ` · ${doneCount} retranscrite(s)` : ""}
+            {scanning ? " · scan en cours…" : ""}
           </p>
 
           <div className="space-y-4">
@@ -324,14 +340,17 @@ function Index() {
                 page={page}
                 index={index}
                 total={pages.length}
+                showTranscription={mode === "ai"}
                 onMove={move}
                 onRemove={remove}
                 onRetry={retry}
+                onAdjust={setCropId}
                 onChange={(id, markdown) => update(id, { markdown })}
               />
             ))}
           </div>
         </>
+
       ) : (
         <p className="sheet p-6 text-center text-sm text-ink-soft">
           Aucune page pour l'instant. Prenez une photo du tableau pour commencer.
