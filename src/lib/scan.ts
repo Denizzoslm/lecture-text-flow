@@ -113,15 +113,23 @@ function detectDocumentQuad(source: Source): Quad | null {
   const data = sctx.getImageData(0, 0, w, h).data;
 
   const gray = new Uint8ClampedArray(w * h);
+  // Le papier est peu saturé même dans l'ombre : c'est le critère le plus fiable
+  // pour le distinguer d'un bureau en bois, d'un tapis ou d'une table colorée.
+  const paper = new Uint8Array(w * h);
   for (let i = 0; i < w * h; i += 1) {
     const r = data[i * 4] ?? 0;
     const g = data[i * 4 + 1] ?? 0;
     const b = data[i * 4 + 2] ?? 0;
     gray[i] = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
+    const max = Math.max(r, g, b);
+    const saturation = max > 0 ? (max - Math.min(r, g, b)) / max : 0;
+    paper[i] = saturation < 0.3 && max > 40 ? 1 : 0;
   }
 
-  // Normalisation de l'éclairage : on divise par un fond local clair pour
-  // que les ombres (coins sombres, pliures) ne rognent pas la feuille.
+  const fromPaper = quadFromMask(paper, w, h, scale, canvas);
+  if (fromPaper) return fromPaper;
+
+  // Repli : zone claire après normalisation de l'éclairage (ombres atténuées).
   const luma = new Float32Array(w * h);
   for (let i = 0; i < w * h; i += 1) luma[i] = gray[i] ?? 0;
   const background = boxBlurMax(luma, w, h, Math.max(6, Math.round(Math.min(w, h) / 6)));
@@ -130,20 +138,25 @@ function detectDocumentQuad(source: Source): Quad | null {
     const bg = Math.max(24, background[i] ?? 255);
     flat[i] = Math.min(255, Math.round(((luma[i] ?? 0) / bg) * 220));
   }
-
   const threshold = otsu(flat);
-  // La feuille est la zone claire ; on garde la composante contenant le centre.
-  const mask = new Uint8Array(w * h);
-  for (let i = 0; i < w * h; i += 1) mask[i] = (flat[i] ?? 0) > threshold ? 1 : 0;
+  const bright = new Uint8Array(w * h);
+  for (let i = 0; i < w * h; i += 1) bright[i] = (flat[i] ?? 0) > threshold ? 1 : 0;
+  return quadFromMask(bright, w, h, scale, canvas);
+}
 
+/** Composante « feuille » -> enveloppe convexe -> quadrilatère d'aire maximale. */
+function quadFromMask(
+  mask: Uint8Array,
+  w: number,
+  h: number,
+  scale: number,
+  canvas: HTMLCanvasElement,
+): Quad | null {
   const component = pageComponent(mask, w, h);
   if (!component) return null;
-
   const { pixels, size } = component;
   if (size < w * h * 0.18) return null;
 
-
-  // Enveloppe convexe de la composante, puis quadrilatère d'aire maximale.
   const inside = new Uint8Array(w * h);
   for (const index of pixels) inside[index] = 1;
   const boundary: Corner[] = [];
@@ -162,7 +175,7 @@ function detectDocumentQuad(source: Source): Quad | null {
     if (edge) boundary.push({ x, y });
   }
 
-  const hull = simplify(convexHull(boundary), 48);
+  const hull = simplify(convexHull(boundary), 40);
   if (hull.length < 4) return null;
   const best = maxAreaQuad(hull);
   if (!best) return null;
@@ -170,6 +183,7 @@ function detectDocumentQuad(source: Source): Quad | null {
   const quad = orderQuad(best).map((corner) => ({ x: corner.x / scale, y: corner.y / scale })) as Quad;
   return isPlausible(quad, canvas.width, canvas.height) ? quad : null;
 }
+
 
 function convexHull(points: Corner[]): Corner[] {
   if (points.length < 4) return points;
