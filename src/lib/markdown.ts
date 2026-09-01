@@ -3,6 +3,8 @@ import katex from "katex";
 
 export type GraphSpec = {
   titre?: string;
+  xlabel?: string;
+  ylabel?: string;
   xmin?: number;
   xmax?: number;
   ymin?: number;
