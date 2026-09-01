@@ -224,8 +224,11 @@
 }
 .prose-cahier table {
   border-collapse: collapse;
-  margin: 0.6em 0;
+  margin: 0.6em 1em 0.6em 0;
+  display: inline-table;
+  vertical-align: top;
 }
+
 .prose-cahier th,
 .prose-cahier td {
   border: 1px solid var(--border);
