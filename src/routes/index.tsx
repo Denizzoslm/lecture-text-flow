@@ -281,6 +281,25 @@ function Index() {
               contenu écrit. Appliqué automatiquement à chaque nouvelle photo.
             </span>
           </label>
+
+          {mode === "ai" ? (
+            <div className="mt-3 rounded border border-border bg-card p-3">
+              <p className="font-mono text-[11px] text-ink-soft">Style de retranscription</p>
+              <div className="mt-2 flex gap-2 rounded border border-border bg-secondary/40 p-1">
+                <ModeButton active={style === "fidele"} onClick={() => setStyle("fidele")}>
+                  Fidèle
+                </ModeButton>
+                <ModeButton active={style === "propre"} onClick={() => setStyle("propre")}>
+                  Propre
+                </ModeButton>
+              </div>
+              <p className="mt-2 text-xs text-ink-soft">
+                {style === "fidele"
+                  ? "Retranscrit exactement ce qui est écrit, dans le même ordre et la même structure."
+                  : "Même contenu (mêmes nombres, mêmes résultats) mais mise en page de document scolaire : titres hiérarchisés, questions alignées, formules centrées."}
+              </p>
+            </div>
+          ) : null}
         </fieldset>
 
         <div className="grid gap-3 sm:grid-cols-2">
