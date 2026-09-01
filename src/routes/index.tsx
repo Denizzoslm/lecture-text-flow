@@ -435,6 +435,22 @@ function Index() {
             {enhancingCount > 0 ? ` · ${enhancingCount} rendu(s) scanner IA en cours…` : ""}
           </p>
 
+          {mode === "ai" && (busy || (doneCount > 0 && doneCount === pages.length)) ? (
+            <div className="mb-4" aria-live="polite">
+              <div className="h-1.5 w-full overflow-hidden rounded bg-secondary">
+                <div
+                  className="h-full bg-brick transition-all"
+                  style={{ width: `${Math.round((doneCount / Math.max(pages.length, 1)) * 100)}%` }}
+                />
+              </div>
+              <p className="mt-2 font-mono text-[11px] text-ink-soft">
+                {busy
+                  ? `Analyse IA en cours… ${doneCount}/${pages.length}`
+                  : "Retranscription terminée ✓"}
+              </p>
+            </div>
+          ) : null}
+
           <div className="space-y-4">
             {pages.map((page, index) => (
               <PageCard
