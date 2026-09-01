@@ -71,7 +71,7 @@ export function PageCard({
           </IconButton>
           <IconButton
             label="Rendu scanner par l'IA"
-            disabled={page.enhancing}
+            disabled={page.enhancing === true}
             onClick={() => onEnhance(page.id)}
           >
             <Sparkles className={`size-4 ${page.aiEnhanced ? "text-sage" : ""}`} />
