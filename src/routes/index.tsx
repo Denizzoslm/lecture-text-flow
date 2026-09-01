@@ -478,23 +478,14 @@ function Index() {
 
       {/* Document hors écran utilisé pour l'export PDF */}
       <div className="pointer-events-none fixed -left-[10000px] top-0" aria-hidden="true">
-        <div ref={printRef} id="doc" style={{ width: "186mm", background: "#ffffff", color: "#2d3f63", padding: "0 2mm" }}>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: "22px", margin: "0 0 4px" }}>
-            {title || "Cahier numérique"}
-          </h1>
-          {meta ? (
-            <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", margin: "0 0 10px" }}>{meta}</p>
-          ) : null}
-          <hr style={{ border: "none", borderTop: "2px solid #8a3a24", margin: "0 0 12px" }} />
-          {pages.map((page, index) => (
-            <section key={page.id} style={{ pageBreakAfter: "always", marginBottom: "18px" }}>
-              <p style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "#5a6a86", margin: "0 0 6px" }}>
-                Page {index + 1}
-              </p>
+        <div ref={printRef} id="doc" style={{ width: "170mm", background: "#ffffff", color: "#16181d" }}>
+          {pages.map((page) => (
+            <section key={page.id}>
               <CourseContent markdown={page.markdown} />
             </section>
           ))}
         </div>
+
       </div>
 
       {cropPage ? (
