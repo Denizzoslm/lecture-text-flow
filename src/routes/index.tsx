@@ -8,6 +8,7 @@ import "katex/dist/katex.min.css";
 import { transcribePage } from "@/lib/transcription.functions";
 import { toJpegDataUrl } from "@/lib/image";
 import { newId, type CoursePage } from "@/lib/pages";
+import { printDocument } from "@/lib/pdf";
 import { PageCard } from "@/components/PageCard";
 import { CourseContent } from "@/components/CourseContent";
 
@@ -266,7 +267,7 @@ function Index() {
 
       {/* Document hors écran utilisé pour l'export PDF */}
       <div className="pointer-events-none fixed -left-[10000px] top-0" aria-hidden="true">
-        <div ref={printRef} style={{ width: "186mm", background: "#ffffff", color: "#2d3f63", padding: "0 2mm" }}>
+        <div ref={printRef} id="doc" style={{ width: "186mm", background: "#ffffff", color: "#2d3f63", padding: "0 2mm" }}>
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: "22px", margin: "0 0 4px" }}>
             {title || "Cahier numérique"}
           </h1>
