@@ -110,12 +110,6 @@ export function GraphPlot({ spec, width = 480, height = 300 }: { spec: GraphSpec
       }
       ctx.stroke();
 
-      if (curve.label) {
-        ctx.fillStyle = color(index);
-        ctx.font = "13px ui-sans-serif, system-ui, sans-serif";
-        ctx.fillText(curve.label, 10, 18 + index * 16);
-      }
-    });
 
     // points remarquables
     (spec.points ?? []).forEach((point) => {
