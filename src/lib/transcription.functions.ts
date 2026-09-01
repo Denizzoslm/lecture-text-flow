@@ -16,6 +16,8 @@ MÉTHODE OBLIGATOIRE :
 MISE EN PAGE (à reproduire fidèlement) :
 - '# ' uniquement si un titre principal est visible ; '## ' pour les sections visibles, '### ' pour les sous-parties visibles.
 - Conserve les repères de structure tels qu'écrits : « A. », « a) », « b) », « 1° », listes à puces, etc.
+- NUMÉROS D'EXERCICE : tout repère d'exercice ou de question numéroté (« 4. », « Exercice 3 », « 1) », « 2° »…) est écrit EN GRAS, en début de ligne, suivi de son énoncé : par exemple « **4.** $8h \\to 8\\,000$ bactéries ».
+- REPÈRES EN LETTRES : chaque sous-question en lettre (« a) », « b) », « c) »…) commence une nouvelle ligne. Si elle est visiblement décalée vers la droite sur la feuille, écris-la comme élément de liste pour obtenir un alinéa : « - a) … ». Les lignes de calcul rattachées à cette lettre et encore plus décalées sur la photo deviennent une liste imbriquée (« - » précédé de 2 espaces). Garde la lettre et sa ponctuation exactement comme sur la feuille.
 - Encadrés : utilise > . Soulignements : reprends-les en **gras**.
 - TABLEAUX : un tableau Markdown distinct par tableau dessiné, chacun avec sa propre ligne d'en-tête. Si deux tableaux sont côte à côte sur la page, écris-les l'un après l'autre séparés UNIQUEMENT par une ligne vide (jamais de texte, de titre ni de trait entre eux) : ils seront réaffichés côte à côte. Ne fusionne jamais deux tableaux en un seul. Garde exactement les mêmes en-têtes, le même nombre de lignes et les mêmes valeurs.
 - Toutes les formules et expressions mathématiques en LaTeX : $...$ en ligne, $$...$$ pour une formule isolée ou centrée sur la page.
@@ -36,6 +38,7 @@ const REVIEW_PROMPT = `Tu es relecteur. On te donne la même photo de page de co
 - chaque nombre, chiffre par chiffre (virgule décimale française), y compris dans les tableaux ;
 - chaque formule LaTeX (indices, exposants, fractions, racines, parenthèses) ;
 - l'ordre et la présence de tous les éléments : titres, repères « A. », « a) », numéros, annotations de marge, légendes, flèches ;
+- la mise en forme des repères : numéros d'exercice/question en **gras**, sous-questions en lettres en éléments de liste (alinéa) quand elles sont décalées sur la photo ;
 - les tableaux : même nombre de colonnes/lignes, mêmes en-têtes, tableaux côte à côte gardés comme deux tableaux séparés par une seule ligne vide ;
 - les blocs \`graphique\` : ne garder que les graphiques réellement dessinés, avec la bonne fenêtre et les bonnes courbes/étiquettes ;
 - aucun ajout, aucune correction de calcul. INTERDIT de recalculer une valeur : tu ne changes un nombre que si tu vois clairement qu'il a été MAL LU sur la photo. Exemple : si la page écrit « 4,05 » alors que le calcul juste donnerait 4,305, tu gardes « 4,05 ».
