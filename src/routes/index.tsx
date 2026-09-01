@@ -377,6 +377,44 @@ function Index() {
           ))}
         </div>
       </div>
+
+      {cropPage ? (
+        <CropEditor
+          sourceDataUrl={cropPage.sourceDataUrl}
+          sourceWidth={cropPage.sourceWidth}
+          sourceHeight={cropPage.sourceHeight}
+          quad={cropPage.quad}
+          onCancel={() => setCropId(null)}
+          onValidate={(quad) => void applyCrop(cropPage.id, quad)}
+        />
+      ) : null}
     </main>
   );
 }
+
+function ModeButton({
+  active,
+  onClick,
+  icon,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={`inline-flex flex-1 items-center justify-center gap-2 rounded px-3 py-2 text-sm font-medium transition-colors ${
+        active ? "border border-brick bg-brick text-primary-foreground" : "border border-transparent text-ink-soft hover:bg-card"
+      }`}
+    >
+      {icon}
+      {children}
+    </button>
+  );
+}
+
