@@ -157,7 +157,7 @@ export const transcribePage = createServerFn({ method: "POST" })
     let reviewed: string | null = null;
     try {
       reviewed = await askGateway(apiKey, [
-        { type: "text", text: `${REVIEW_PROMPT}\n\n--- PREMIÈRE RETRANSCRIPTION ---\n${draft}` },
+        { type: "input_text", text: `${REVIEW_PROMPT}\n\n--- PREMIÈRE RETRANSCRIPTION ---\n${draft}` },
         image,
       ]);
     } catch {
