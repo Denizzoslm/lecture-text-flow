@@ -1,4 +1,4 @@
 # Feuille de route
 
-- [ ] Scan IA : vérifier que le rendu « scanner d'imprimante » s'applique bien (ajout de photo → image nettoyée) et que l'export attend la fin du traitement.
-- [ ] Améliorer le rendu de la retranscription IA (meilleure fidélité et meilleure mise en page).
+- [x] Scan IA : rendu « scanner d'imprimante » vérifié de bout en bout (fond blanc, feuille redressée) et export bloqué pendant le traitement.
+- [x] Retranscription IA améliorée : double passage (transcription puis relecture face à la photo) + consignes renforcées sur les nombres, tableaux et graphiques.
