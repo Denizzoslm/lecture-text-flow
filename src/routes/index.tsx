@@ -210,6 +210,23 @@ function Index() {
       </header>
 
       <section className="sheet mb-5 p-4">
+        <fieldset className="mb-4">
+          <legend className="font-mono text-[11px] text-ink-soft">Mode de travail</legend>
+          <div className="mt-2 flex gap-2 rounded border border-border bg-secondary/40 p-1">
+            <ModeButton active={mode === "scan"} onClick={() => setMode("scan")} icon={<ScanLine className="size-4" />}>
+              PDF scanné
+            </ModeButton>
+            <ModeButton active={mode === "ai"} onClick={() => setMode("ai")} icon={<ScanText className="size-4" />}>
+              PDF retranscrit (IA)
+            </ModeButton>
+          </div>
+          <p className="mt-2 text-xs text-ink-soft">
+            {mode === "scan"
+              ? "Les pages nettoyées sont assemblées telles quelles dans un PDF A4, sans appel à l'IA."
+              : "Chaque page scannée est retranscrite en Markdown + LaTeX, modifiable avant export."}
+          </p>
+        </fieldset>
+
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block">
             <span className="font-mono text-[11px] text-ink-soft">Titre du cours</span>
@@ -230,6 +247,7 @@ function Index() {
             />
           </label>
         </div>
+
 
         <div className="mt-4 flex flex-col gap-2 sm:flex-row">
           <button
