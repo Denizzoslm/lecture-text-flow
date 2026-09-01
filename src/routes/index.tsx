@@ -1,31 +1,33 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Camera, FileDown, Images, ScanText } from "lucide-react";
+import { Camera, FileDown, Images, ScanLine, ScanText } from "lucide-react";
 import { toast } from "sonner";
 import "katex/dist/katex.min.css";
 
 import { transcribePage } from "@/lib/transcription.functions";
-import { toJpegDataUrl } from "@/lib/image";
+import { rescanFromQuad, scanFile, type Quad } from "@/lib/scan";
 import { newId, type CoursePage } from "@/lib/pages";
 import { printDocument } from "@/lib/pdf";
+import { downloadScannedPdf } from "@/lib/scanned-pdf";
 import { PageCard } from "@/components/PageCard";
+import { CropEditor } from "@/components/CropEditor";
 import { CourseContent } from "@/components/CourseContent";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Cahier numérique — cours de maths photographiés en PDF" },
+      { title: "Cahier numérique — scanner et retranscrire ses cours de maths" },
       {
         name: "description",
         content:
-          "Photographiez vos pages de cours de maths : retranscription automatique en Markdown avec formules LaTeX, calculs refaits, graphiques regénérés et export PDF A4.",
+          "Scannez vos pages de cours de maths depuis votre téléphone : recadrage automatique, filtre document, export PDF A4 scanné ou retranscription IA en Markdown et LaTeX.",
       },
-      { property: "og:title", content: "Cahier numérique — cours de maths photographiés en PDF" },
+      { property: "og:title", content: "Cahier numérique — scanner et retranscrire ses cours de maths" },
       {
         property: "og:description",
         content:
-          "Retranscription automatique de pages de cours manuscrites : formules LaTeX, calculs vérifiés, graphiques regénérés, export PDF A4.",
+          "Scanner de documents côté client (recadrage, redressement, filtre papier) et retranscription IA en LaTeX, avec export PDF A4.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -34,12 +36,17 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
+type Mode = "scan" | "ai";
+
 function Index() {
   const [title, setTitle] = useState("");
   const [meta, setMeta] = useState("");
+  const [mode, setMode] = useState<Mode>("scan");
   const [pages, setPages] = useState<CoursePage[]>([]);
   const [busy, setBusy] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [cropId, setCropId] = useState<string | null>(null);
 
   const cameraRef = useRef<HTMLInputElement | null>(null);
   const galleryRef = useRef<HTMLInputElement | null>(null);
@@ -48,22 +55,36 @@ function Index() {
 
   const addFiles = useCallback(async (files: FileList | null) => {
     if (!files?.length) return;
+    setScanning(true);
     const converted: CoursePage[] = [];
+    let failedCrop = 0;
     for (const file of Array.from(files)) {
       try {
+        const scan = await scanFile(file);
+        if (!scan.quad) failedCrop += 1;
         converted.push({
           id: newId(),
-          imageDataUrl: await toJpegDataUrl(file),
+          sourceDataUrl: scan.sourceDataUrl,
+          sourceWidth: scan.sourceWidth,
+          sourceHeight: scan.sourceHeight,
+          imageDataUrl: scan.scanDataUrl,
+          quad: scan.quad,
           markdown: "",
           status: "pending",
         });
       } catch {
-        toast.error(`Impossible de lire « ${file.name} ».`);
+        toast.error(`Impossible de scanner « ${file.name} ».`);
       }
     }
+    setScanning(false);
     if (converted.length) {
       setPages((current) => [...current, ...converted]);
-      toast.success(`${converted.length} photo(s) ajoutée(s) en JPEG.`);
+      toast.success(`${converted.length} page(s) scannée(s).`);
+      if (failedCrop) {
+        toast.info(
+          `${failedCrop} page(s) sans recadrage automatique : utilisez « Ajuster le recadrage » si besoin.`,
+        );
+      }
     }
   }, []);
 
@@ -89,6 +110,22 @@ function Index() {
   const remove = useCallback((id: string) => {
     setPages((current) => current.filter((page) => page.id !== id));
   }, []);
+
+  const applyCrop = useCallback(
+    async (id: string, quad: Quad) => {
+      const page = pages.find((item) => item.id === id);
+      setCropId(null);
+      if (!page) return;
+      try {
+        const scanDataUrl = await rescanFromQuad(page.sourceDataUrl, quad);
+        update(id, { imageDataUrl: scanDataUrl, quad });
+        toast.success("Page rescannée avec le nouveau recadrage.");
+      } catch {
+        toast.error("Le rescan a échoué.");
+      }
+    },
+    [pages, update],
+  );
 
   const transcribeOne = useCallback(
     async (page: CoursePage) => {
@@ -140,8 +177,25 @@ function Index() {
     }
   }, [title, meta]);
 
+  const exportScannedPdf = useCallback(async () => {
+    setExporting(true);
+    try {
+      await downloadScannedPdf(
+        pages.map((page) => page.imageDataUrl),
+        title,
+        meta,
+      );
+      toast.success("PDF scanné téléchargé.");
+    } catch {
+      toast.error("L'export du PDF scanné a échoué.");
+    } finally {
+      setExporting(false);
+    }
+  }, [pages, title, meta]);
 
+  const cropPage = pages.find((page) => page.id === cropId) ?? null;
   const doneCount = pages.filter((page) => page.status === "done").length;
+
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 pb-24 pt-6">
