@@ -324,6 +324,32 @@ function Index() {
         </div>
 
 
+        <div
+          onDragOver={(event) => {
+            event.preventDefault();
+            setDragging(true);
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={(event) => {
+            event.preventDefault();
+            setDragging(false);
+            void addFiles(event.dataTransfer.files);
+          }}
+          onClick={() => galleryRef.current?.click()}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") galleryRef.current?.click();
+          }}
+          className={`mt-4 cursor-pointer rounded border-2 border-dashed p-6 text-center transition-colors ${
+            dragging ? "border-brick bg-brick/10" : "border-border bg-card hover:bg-secondary/50"
+          }`}
+        >
+          <p className="text-sm font-medium text-ink">Dépose ta photo ici</p>
+          <p className="mt-1 text-xs text-ink-soft">ou sélectionne un fichier</p>
+          <p className="mt-2 font-mono text-[10px] text-ink-soft">JPG · JPEG · PNG · HEIC · WEBP</p>
+        </div>
+
         <div className="mt-4 flex flex-col gap-2 sm:flex-row">
           <button
             type="button"
