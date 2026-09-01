@@ -28,7 +28,7 @@ Si un repère, une courbe ou un graphique est effectivement tracé sur la photo,
 {"titre":"Courbe de f","xlabel":"x (heures écoulées)","ylabel":"y (milliers de bactéries)","xmin":-1,"xmax":3,"ymin":0,"ymax":1100,"courbes":[{"expr":"8*4^x","label":"y=8000*4^x"}],"points":[{"x":1,"y":32,"label":"A"}]}
 \`\`\`
 
-Règles pour les blocs \`graphique\` : "expr" est une expression JavaScript/mathjs de la variable x (utilise *, /, ^, sqrt(x), abs(x), exp(x), log(x), sin(x)...), jamais du LaTeX. Reprends la fenêtre xmin/xmax/ymin/ymax du repère dessiné, ainsi que toutes les courbes tracées avec leurs étiquettes exactes. "points" et "titre" sont optionnels. Ne mets aucun texte autour du JSON dans le bloc. Si aucun graphique n'est dessiné, n'écris aucun bloc \`graphique\`.`;
+Règles pour les blocs \`graphique\` : "expr" est une expression JavaScript/mathjs de la variable x (utilise *, /, ^, sqrt(x), abs(x), exp(x), log(x), sin(x)...), jamais du LaTeX. Reprends la fenêtre xmin/xmax/ymin/ymax du repère dessiné, ainsi que toutes les courbes tracées avec leurs étiquettes exactes. "xlabel" et "ylabel" sont OBLIGATOIRES : recopie les noms des axes lus sur la photo, avec leur unité (ex. "x (heures écoulées)", "y (milliers de bactéries)") ; si l'échelle du repère est en milliers, adapte "expr" à cette échelle pour que la courbe reste dans la fenêtre. "points" et "titre" sont optionnels. Ne mets aucun texte autour du JSON dans le bloc. Si aucun graphique n'est dessiné, n'écris aucun bloc \`graphique\`.`;
 
 const REVIEW_PROMPT = `Tu es relecteur. On te donne la même photo de page de cours et une première retranscription Markdown de cette page. Compare-les ligne par ligne et rends la VERSION CORRIGÉE de la retranscription.
 
