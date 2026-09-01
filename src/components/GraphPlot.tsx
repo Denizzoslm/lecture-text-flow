@@ -6,7 +6,7 @@ const COLORS: string[] = ["#8a3a24", "#2d3f63", "#5c7a55", "#a97b2a"];
 const color = (i: number) => COLORS[i % COLORS.length] ?? "#8a3a24";
 
 /** Trace les courbes d'un bloc `graphique` sur un canvas (compatible export PDF). */
-export function GraphPlot({ spec, width = 640, height = 400 }: { spec: GraphSpec; width?: number; height?: number }) {
+export function GraphPlot({ spec, width = 480, height = 300 }: { spec: GraphSpec; width?: number; height?: number }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -132,7 +132,7 @@ export function GraphPlot({ spec, width = 640, height = 400 }: { spec: GraphSpec
   }, [spec, width, height]);
 
   return (
-    <figure className="my-4">
+    <figure className="my-4 max-w-xl">
       <canvas
         ref={canvasRef}
         style={{ width: "100%", height: "auto", aspectRatio: `${width} / ${height}` }}
