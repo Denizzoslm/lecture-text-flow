@@ -146,9 +146,9 @@ export const transcribePage = createServerFn({ method: "POST" })
       throw new Error("La clé du service d'IA est absente. Contactez l'administrateur du site.");
     }
 
-    const image = { type: "image_url", image_url: { url: data.imageDataUrl } };
+    const image: ResponsePart = { type: "input_image", image_url: data.imageDataUrl };
 
-    const draft = await askGateway(apiKey, [{ type: "text", text: TRANSCRIPTION_PROMPT }, image]);
+    const draft = await askGateway(apiKey, [{ type: "input_text", text: TRANSCRIPTION_PROMPT }, image]);
     if (!draft) {
       throw new Error("La retranscription est revenue vide. Reprenez la photo si elle est floue.");
     }
