@@ -120,16 +120,28 @@ function detectDocumentQuad(source: Source): Quad | null {
     gray[i] = Math.round(0.299 * r + 0.587 * g + 0.114 * b);
   }
 
-  const threshold = otsu(gray);
-  // La feuille est la zone claire ; on garde la composante connexe la plus grande.
-  const mask = new Uint8Array(w * h);
-  for (let i = 0; i < w * h; i += 1) mask[i] = (gray[i] ?? 0) > threshold ? 1 : 0;
+  // Normalisation de l'éclairage : on divise par un fond local clair pour
+  // que les ombres (coins sombres, pliures) ne rognent pas la feuille.
+  const luma = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i += 1) luma[i] = gray[i] ?? 0;
+  const background = boxBlurMax(luma, w, h, Math.max(6, Math.round(Math.min(w, h) / 6)));
+  const flat = new Uint8ClampedArray(w * h);
+  for (let i = 0; i < w * h; i += 1) {
+    const bg = Math.max(24, background[i] ?? 255);
+    flat[i] = Math.min(255, Math.round(((luma[i] ?? 0) / bg) * 220));
+  }
 
-  const component = largestComponent(mask, w, h);
+  const threshold = otsu(flat);
+  // La feuille est la zone claire ; on garde la composante contenant le centre.
+  const mask = new Uint8Array(w * h);
+  for (let i = 0; i < w * h; i += 1) mask[i] = (flat[i] ?? 0) > threshold ? 1 : 0;
+
+  const component = pageComponent(mask, w, h);
   if (!component) return null;
 
   const { pixels, size } = component;
   if (size < w * h * 0.18) return null;
+
 
   // Enveloppe convexe de la composante, puis quadrilatère d'aire maximale.
   const inside = new Uint8Array(w * h);
