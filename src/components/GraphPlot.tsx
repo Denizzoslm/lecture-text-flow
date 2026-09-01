@@ -132,7 +132,7 @@ export function GraphPlot({ spec, width = 480, height = 300 }: { spec: GraphSpec
   }, [spec, width, height]);
 
   return (
-    <figure className="my-4">
+    <figure className="my-4 max-w-xl">
       <canvas
         ref={canvasRef}
         style={{ width: "100%", height: "auto", aspectRatio: `${width} / ${height}` }}
