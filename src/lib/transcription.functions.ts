@@ -42,7 +42,7 @@ const REVIEW_PROMPT = `Tu es relecteur. On te donne la même photo de page de co
 
 Réponds UNIQUEMENT avec le Markdown final corrigé, sans commentaire, sans balise de code autour (sauf les blocs \`graphique\`).`;
 
-const MODEL = "google/gemini-3.1-pro-preview";
+const MODEL = "openai/gpt-5.5";
 
 function readErrorMessage(status: number, body: string): string {
   let message = body.slice(0, 300);
@@ -58,22 +58,25 @@ function readErrorMessage(status: number, body: string): string {
   return message || `Échec de la retranscription (erreur ${status}).`;
 }
 
-async function askGateway(
-  apiKey: string,
-  content: Array<Record<string, unknown>>,
-): Promise<string | null> {
+type ResponsePart = { type: "input_text"; text: string } | { type: "input_image"; image_url: string };
+
+/** Appel OpenAI via l'API Responses de la passerelle (streaming obligatoire). */
+async function askGateway(apiKey: string, content: ResponsePart[]): Promise<string | null> {
   let response: Response;
   try {
-    response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    response = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+        "Lovable-API-Key": apiKey,
+        "X-Lovable-AIG-SDK": "fetch",
       },
       body: JSON.stringify({
         model: MODEL,
-        temperature: 0,
-        messages: [{ role: "user", content }],
+        input: [{ role: "user", content }],
+        stream: true,
+        store: false,
+        reasoning: { effort: "medium", summary: "auto" },
       }),
     });
   } catch {
@@ -84,12 +87,44 @@ async function askGateway(
     const body = await response.text().catch(() => "");
     throw new Error(readErrorMessage(response.status, body));
   }
+  if (!response.body) throw new Error("Réponse vide du service de retranscription.");
 
-  const payload = (await response.json()) as {
-    choices?: Array<{ message?: { content?: string } }>;
-  };
-  const text = payload.choices?.[0]?.message?.content?.trim();
-  return text && text.length > 0 ? text : null;
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let text = "";
+  let completed = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() ?? "";
+    for (const line of lines) {
+      if (!line.startsWith("data:")) continue;
+      const payload = line.slice(5).trim();
+      if (!payload || payload === "[DONE]") continue;
+      let event: {
+        type?: string;
+        delta?: string;
+        response?: { output_text?: string };
+      };
+      try {
+        event = JSON.parse(payload);
+      } catch {
+        continue;
+      }
+      if (event.type === "response.output_text.delta" && typeof event.delta === "string") {
+        text += event.delta;
+      } else if (event.type === "response.completed" && event.response?.output_text) {
+        completed = event.response.output_text;
+      }
+    }
+  }
+
+  const final = (text || completed).trim();
+  return final.length > 0 ? final : null;
 }
 
 function stripCodeFence(markdown: string): string {
@@ -111,9 +146,9 @@ export const transcribePage = createServerFn({ method: "POST" })
       throw new Error("La clé du service d'IA est absente. Contactez l'administrateur du site.");
     }
 
-    const image = { type: "image_url", image_url: { url: data.imageDataUrl } };
+    const image: ResponsePart = { type: "input_image", image_url: data.imageDataUrl };
 
-    const draft = await askGateway(apiKey, [{ type: "text", text: TRANSCRIPTION_PROMPT }, image]);
+    const draft = await askGateway(apiKey, [{ type: "input_text", text: TRANSCRIPTION_PROMPT }, image]);
     if (!draft) {
       throw new Error("La retranscription est revenue vide. Reprenez la photo si elle est floue.");
     }
@@ -122,7 +157,7 @@ export const transcribePage = createServerFn({ method: "POST" })
     let reviewed: string | null = null;
     try {
       reviewed = await askGateway(apiKey, [
-        { type: "text", text: `${REVIEW_PROMPT}\n\n--- PREMIÈRE RETRANSCRIPTION ---\n${draft}` },
+        { type: "input_text", text: `${REVIEW_PROMPT}\n\n--- PREMIÈRE RETRANSCRIPTION ---\n${draft}` },
         image,
       ]);
     } catch {
