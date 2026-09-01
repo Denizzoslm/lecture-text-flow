@@ -303,7 +303,7 @@ function warp(source: Source, quad: Quad): Source {
   canvas.height = outH;
   const ctx = context2d(canvas);
   const out = ctx.createImageData(outW, outH);
-  const [a, b, c, d, e, f, g, hh] = matrix;
+  const [a = 1, b = 0, c = 0, d = 0, e = 1, f = 0, g = 0, hh = 0] = matrix;
   const sw = source.canvas.width;
   const sh = source.canvas.height;
 

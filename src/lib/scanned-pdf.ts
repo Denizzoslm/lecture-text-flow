@@ -20,7 +20,7 @@ export async function downloadScannedPdf(images: string[], title: string, meta: 
     const height = size.height * scale;
     const x = (A4.width - width) / 2;
     const y = (A4.height - height) / 2;
-    doc.addImage(dataUrl, "JPEG", x, y, width, height, undefined, "fast");
+    doc.addImage(dataUrl, "JPEG", x, y, width, height, `page-${index}`, "FAST");
   }
 
   const base = (title.trim() || "cahier-numerique").replace(/[^\p{L}\p{N}\- ]+/gu, "").trim() || "cahier-numerique";
