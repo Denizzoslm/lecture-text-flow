@@ -42,6 +42,13 @@ const REVIEW_PROMPT = `Tu es relecteur. On te donne la même photo de page de co
 
 Réponds UNIQUEMENT avec le Markdown final corrigé, sans commentaire, sans balise de code autour (sauf les blocs \`graphique\`).`;
 
+/** Mode « propre » : même contenu, mise en page de document scolaire. */
+const CLEAN_PROMPT = `MODE « PROPRE » (mise en forme uniquement) :
+- Le CONTENU reste strictement identique : mêmes nombres, mêmes résultats (même faux), mêmes étapes, même ordre des questions.
+- Tu peux uniquement : hiérarchiser les titres et sous-titres, aérer les paragraphes, aligner les repères de questions (« A. », « a) », « b) »…) en liste propre, centrer une formule isolée avec $$...$$, régulariser les espaces.
+- Écris les mathématiques proprement en LaTeX : \\times pour ×, fractions avec \\dfrac, exposants et indices bien placés, virgule décimale française, espace fine pour les milliers (8\\,000), unités en texte (\\text{h}, \\text{bactéries}).
+- N'ajoute aucun titre inventé, aucune explication, aucune correction de calcul, aucune conclusion.`;
+
 const MODEL = "openai/gpt-5.5";
 
 function readErrorMessage(status: number, body: string): string {
