@@ -125,6 +125,8 @@ export function GraphPlot({ spec, width = 480, height = 300 }: { spec: GraphSpec
     });
   }, [spec, width, height]);
 
+  const legend = (spec.courbes ?? []).filter((c) => c.label);
+
   return (
     <figure className="my-4 max-w-xl">
       <canvas
@@ -132,6 +134,19 @@ export function GraphPlot({ spec, width = 480, height = 300 }: { spec: GraphSpec
         style={{ width: "100%", height: "auto", aspectRatio: `${width} / ${height}` }}
         className="rounded border border-border bg-card"
       />
+      {legend.length ? (
+        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 rounded border border-border bg-card px-3 py-2">
+          {legend.map((curve, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <span
+                className="inline-block h-[2px] w-5 rounded-full"
+                style={{ backgroundColor: color(index) }}
+              />
+              <span className="font-mono text-[11px] text-ink">{curve.label}</span>
+            </div>
+          ))}
+        </div>
+      ) : null}
       {spec.titre ? (
         <figcaption className="mt-1 font-mono text-[11px] text-ink-soft">{spec.titre}</figcaption>
       ) : null}
