@@ -200,12 +200,13 @@ function Index() {
   return (
     <main className="mx-auto w-full max-w-3xl px-4 pb-24 pt-6">
       <header className="mb-6">
-        <p className="font-mono text-[11px] tracking-tight text-brick">mathématiques · retranscription</p>
+        <p className="font-mono text-[11px] tracking-tight text-brick">mathématiques · scanner &amp; retranscription</p>
         <h1 className="mt-1 text-3xl leading-tight text-ink">Cahier numérique</h1>
         <p className="mt-2 max-w-prose text-sm text-ink-soft">
-          Photographiez le tableau ou votre cahier : les pages sont retranscrites en texte et formules LaTeX, les
-          calculs sont refaits et les graphiques regénérés, puis tout part en PDF A4.
+          Photographiez le tableau ou votre cahier : chaque page est redressée et nettoyée comme par un scanner, puis
+          exportée en PDF A4 — ou retranscrite par l'IA en texte, formules LaTeX et graphiques.
         </p>
+
       </header>
 
       <section className="sheet mb-5 p-4">
