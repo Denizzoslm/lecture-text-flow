@@ -1,26 +1,29 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const TRANSCRIPTION_PROMPT = `Tu vois la photo d'une page de cours de mathématiques (tableau ou cahier, écriture manuscrite ou imprimée). Retranscris fidèlement son contenu en Markdown structuré, en français :
+const TRANSCRIPTION_PROMPT = `Tu vois la photo d'une page de cours de mathématiques (tableau ou cahier, écriture manuscrite ou imprimée). Ta seule mission est une retranscription STRICTEMENT FIDÈLE du contenu, en Markdown, en français.
 
-- Utilise '# ' uniquement si un titre principal de cours est visible.
-- Utilise '## ' pour les titres de section, '### ' pour les sous-parties.
-- Utilise des listes pour les énoncés d'exercices ou énumérations.
-- Écris TOUTES les formules en LaTeX : $...$ en ligne, $$...$$ pour une formule isolée.
-- Aucun commentaire ni explication, uniquement le contenu retranscrit.
-- Si un mot est illisible, écris [illisible].
+RÈGLE ABSOLUE DE FIDÉLITÉ :
+- Retranscris exactement ce qui est écrit, dans le même ordre et la même structure, sans rien ajouter, rien retirer, rien reformuler.
+- NE CORRIGE RIEN : même si un calcul, un résultat ou une formule est faux, recopie-le tel quel.
+- N'ajoute aucun calcul, aucune étape, aucune explication, aucune section supplémentaire, aucune conclusion.
+- N'invente aucun graphique ni aucune courbe qui ne serait pas dessiné sur la photo.
+- Si un mot ou un symbole est illisible, écris [illisible].
+- Conserve la mise en page : titres, numéros d'exercices, listes, encadrés (utilise > pour un encadré), soulignements repris en **gras**, tableaux en Markdown.
 
-REFAIRE LES CALCULS ET LES GRAPHIQUES :
-- Refais entièrement chaque calcul, résolution, dérivée, primitive, limite, factorisation ou application numérique présent sur la page, et donne le résultat exact (simplifié).
-- Si un résultat écrit sur la page est faux ou incomplet, retranscris la ligne originale puis ajoute juste en dessous une ligne commençant par "**Correction :**" avec le calcul refait, détaillé étape par étape en LaTeX.
-- À la fin de la page, si des calculs étaient présents, ajoute une section "### Calculs refaits" avec les étapes complètes de chaque calcul vérifié.
-- Chaque fois qu'un graphique, une courbe, un repère ou une fonction à représenter apparaît (ou est demandé), regénère-le sous forme d'un bloc de code de langage \`graphique\` contenant UNIQUEMENT du JSON valide de cette forme :
+MISE EN FORME :
+- '# ' uniquement si un titre principal est visible sur la page ; '## ' pour les sections visibles, '### ' pour les sous-parties visibles.
+- Toutes les formules et expressions mathématiques en LaTeX : $...$ en ligne, $$...$$ pour une formule isolée ou centrée sur la page.
+- Aucun commentaire de ta part, uniquement le contenu de la page.
+
+GRAPHIQUES DÉJÀ DESSINÉS SUR LA PAGE (et seulement ceux-là) :
+Si un repère, une courbe ou un graphique est effectivement tracé sur la photo, reproduis-le au plus près sous forme d'un bloc de code de langage \`graphique\` contenant UNIQUEMENT du JSON valide de cette forme :
 
 \`\`\`graphique
 {"titre":"Courbe de f","xmin":-5,"xmax":5,"ymin":-4,"ymax":8,"courbes":[{"expr":"x^2-2*x","label":"f(x)=x^2-2x"}],"points":[{"x":1,"y":-1,"label":"S"}]}
 \`\`\`
 
-Règles pour les blocs \`graphique\` : "expr" est une expression JavaScript/mathjs de la variable x (utilise *, /, ^, sqrt(x), abs(x), exp(x), log(x), sin(x)...), jamais du LaTeX. Choisis une fenêtre xmin/xmax/ymin/ymax pertinente. "points" et "titre" sont optionnels. Ne mets aucun texte autour du JSON dans le bloc.`;
+Règles pour les blocs \`graphique\` : "expr" est une expression JavaScript/mathjs de la variable x (utilise *, /, ^, sqrt(x), abs(x), exp(x), log(x), sin(x)...), jamais du LaTeX. Reprends la fenêtre xmin/xmax/ymin/ymax du repère dessiné. "points" et "titre" sont optionnels. Ne mets aucun texte autour du JSON dans le bloc. Si aucun graphique n'est dessiné, n'écris aucun bloc \`graphique\`.`;
 
 const MODEL = "google/gemini-3.7-flash";
 
