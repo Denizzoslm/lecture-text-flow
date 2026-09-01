@@ -1,24 +1,298 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useCallback, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { Camera, FileDown, Images, ScanText } from "lucide-react";
+import { toast } from "sonner";
+import "katex/dist/katex.min.css";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
+import { transcribePage } from "@/lib/transcription.functions";
+import { toJpegDataUrl } from "@/lib/image";
+import { newId, type CoursePage } from "@/lib/pages";
+import { PageCard } from "@/components/PageCard";
+import { CourseContent } from "@/components/CourseContent";
+
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Cahier numérique — cours de maths photographiés en PDF" },
+      {
+        name: "description",
+        content:
+          "Photographiez vos pages de cours de maths : retranscription automatique en Markdown avec formules LaTeX, calculs refaits, graphiques regénérés et export PDF A4.",
+      },
+      { property: "og:title", content: "Cahier numérique — cours de maths photographiés en PDF" },
+      {
+        property: "og:description",
+        content:
+          "Retranscription automatique de pages de cours manuscrites : formules LaTeX, calculs vérifiés, graphiques regénérés, export PDF A4.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
+  const [title, setTitle] = useState("");
+  const [meta, setMeta] = useState("");
+  const [pages, setPages] = useState<CoursePage[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  const cameraRef = useRef<HTMLInputElement | null>(null);
+  const galleryRef = useRef<HTMLInputElement | null>(null);
+  const printRef = useRef<HTMLDivElement | null>(null);
+  const runTranscription = useServerFn(transcribePage);
+
+  const addFiles = useCallback(async (files: FileList | null) => {
+    if (!files?.length) return;
+    const converted: CoursePage[] = [];
+    for (const file of Array.from(files)) {
+      try {
+        converted.push({
+          id: newId(),
+          imageDataUrl: await toJpegDataUrl(file),
+          markdown: "",
+          status: "pending",
+        });
+      } catch {
+        toast.error(`Impossible de lire « ${file.name} ».`);
+      }
+    }
+    if (converted.length) {
+      setPages((current) => [...current, ...converted]);
+      toast.success(`${converted.length} photo(s) ajoutée(s) en JPEG.`);
+    }
+  }, []);
+
+  const update = useCallback((id: string, patch: Partial<CoursePage>) => {
+    setPages((current) => current.map((page) => (page.id === id ? { ...page, ...patch } : page)));
+  }, []);
+
+  const move = useCallback((id: string, direction: -1 | 1) => {
+    setPages((current) => {
+      const index = current.findIndex((page) => page.id === id);
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= current.length) return current;
+      const next = [...current];
+      const a = next[index];
+      const b = next[target];
+      if (!a || !b) return current;
+      next[index] = b;
+      next[target] = a;
+      return next;
+    });
+  }, []);
+
+  const remove = useCallback((id: string) => {
+    setPages((current) => current.filter((page) => page.id !== id));
+  }, []);
+
+  const transcribeOne = useCallback(
+    async (page: CoursePage) => {
+      update(page.id, { status: "running", error: undefined });
+      try {
+        const result = await runTranscription({ data: { imageDataUrl: page.imageDataUrl } });
+        update(page.id, { status: "done", markdown: result.markdown });
+      } catch (error) {
+        update(page.id, {
+          status: "error",
+          error: error instanceof Error ? error.message : "Erreur inconnue pendant la retranscription.",
+        });
+      }
+    },
+    [runTranscription, update],
+  );
+
+  const transcribeAll = useCallback(async () => {
+    const targets = pages.filter((page) => page.status !== "done");
+    if (!targets.length) {
+      toast.info("Toutes les pages sont déjà retranscrites.");
+      return;
+    }
+    setBusy(true);
+    for (const page of targets) {
+      await transcribeOne(page);
+    }
+    setBusy(false);
+  }, [pages, transcribeOne]);
+
+  const retry = useCallback(
+    (id: string) => {
+      const page = pages.find((item) => item.id === id);
+      if (page) void transcribeOne(page);
+    },
+    [pages, transcribeOne],
+  );
+
+  const exportPdf = useCallback(async () => {
+    const element = printRef.current;
+    if (!element) return;
+    setExporting(true);
+    try {
+      const { default: html2pdf } = await import("html2pdf.js");
+      await html2pdf()
+        .set({
+          margin: [14, 12, 14, 12],
+          filename: `${(title || "cahier-numerique").replace(/[^\w\-À-ÿ ]+/g, "").trim() || "cahier-numerique"}.pdf`,
+          image: { type: "jpeg", quality: 0.95 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        })
+        .from(element)
+        .save();
+    } catch {
+      toast.error("L'export PDF a échoué. Réessayez depuis un navigateur récent.");
+    } finally {
+      setExporting(false);
+    }
+  }, [title]);
+
+  const doneCount = pages.filter((page) => page.status === "done").length;
+
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
+    <main className="mx-auto w-full max-w-3xl px-4 pb-24 pt-6">
+      <header className="mb-6">
+        <p className="font-mono text-[11px] tracking-tight text-brick">mathématiques · retranscription</p>
+        <h1 className="mt-1 text-3xl leading-tight text-ink">Cahier numérique</h1>
+        <p className="mt-2 max-w-prose text-sm text-ink-soft">
+          Photographiez le tableau ou votre cahier : les pages sont retranscrites en texte et formules LaTeX, les
+          calculs sont refaits et les graphiques regénérés, puis tout part en PDF A4.
+        </p>
+      </header>
+
+      <section className="sheet mb-5 p-4">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <label className="block">
+            <span className="font-mono text-[11px] text-ink-soft">Titre du cours</span>
+            <input
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="Ex. Dérivées et tangentes"
+              className="mt-1 w-full rounded border border-input bg-secondary/40 px-3 py-2 text-sm text-ink outline-none focus:border-brick"
+            />
+          </label>
+          <label className="block">
+            <span className="font-mono text-[11px] text-ink-soft">Classe / date (optionnel)</span>
+            <input
+              value={meta}
+              onChange={(event) => setMeta(event.target.value)}
+              placeholder="Ex. 1re B — 12 mars"
+              className="mt-1 w-full rounded border border-input bg-secondary/40 px-3 py-2 text-sm text-ink outline-none focus:border-brick"
+            />
+          </label>
+        </div>
+
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+          <button
+            type="button"
+            onClick={() => cameraRef.current?.click()}
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded border border-brick bg-brick px-4 py-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+          >
+            <Camera className="size-4" /> Prendre une photo
+          </button>
+          <button
+            type="button"
+            onClick={() => galleryRef.current?.click()}
+            className="inline-flex flex-1 items-center justify-center gap-2 rounded border border-border bg-card px-4 py-3 text-sm font-medium text-ink transition-colors hover:bg-secondary"
+          >
+            <Images className="size-4" /> Importer depuis la galerie
+          </button>
+        </div>
+
+        <input
+          ref={cameraRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={(event) => {
+            void addFiles(event.target.files);
+            event.target.value = "";
+          }}
+        />
+        <input
+          ref={galleryRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={(event) => {
+            void addFiles(event.target.files);
+            event.target.value = "";
+          }}
+        />
+      </section>
+
+      {pages.length > 0 ? (
+        <>
+          <div className="mb-4 flex flex-col gap-2 sm:flex-row">
+            <button
+              type="button"
+              onClick={() => void transcribeAll()}
+              disabled={busy}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded border border-brick bg-brick px-4 py-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              <ScanText className="size-4" />
+              {busy ? "Retranscription en cours…" : "Retranscrire les photos"}
+            </button>
+            <button
+              type="button"
+              onClick={() => void exportPdf()}
+              disabled={exporting || doneCount === 0}
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded border border-border bg-card px-4 py-3 text-sm font-medium text-ink transition-colors hover:bg-secondary disabled:opacity-50"
+            >
+              <FileDown className="size-4" />
+              {exporting ? "Préparation du PDF…" : "Télécharger le PDF"}
+            </button>
+          </div>
+
+          <p className="mb-3 font-mono text-[11px] text-ink-soft">
+            {pages.length} page(s) · {doneCount} retranscrite(s)
+          </p>
+
+          <div className="space-y-4">
+            {pages.map((page, index) => (
+              <PageCard
+                key={page.id}
+                page={page}
+                index={index}
+                total={pages.length}
+                onMove={move}
+                onRemove={remove}
+                onRetry={retry}
+                onChange={(id, markdown) => update(id, { markdown })}
+              />
+            ))}
+          </div>
+        </>
+      ) : (
+        <p className="sheet p-6 text-center text-sm text-ink-soft">
+          Aucune page pour l'instant. Prenez une photo du tableau pour commencer.
+        </p>
+      )}
+
+      {/* Document hors écran utilisé pour l'export PDF */}
+      <div className="pointer-events-none fixed -left-[10000px] top-0" aria-hidden="true">
+        <div ref={printRef} style={{ width: "186mm", background: "#ffffff", color: "#2d3f63", padding: "0 2mm" }}>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: "22px", margin: "0 0 4px" }}>
+            {title || "Cahier numérique"}
+          </h1>
+          {meta ? (
+            <p style={{ fontFamily: "var(--font-mono)", fontSize: "11px", margin: "0 0 10px" }}>{meta}</p>
+          ) : null}
+          <hr style={{ border: "none", borderTop: "2px solid #8a3a24", margin: "0 0 12px" }} />
+          {pages.map((page, index) => (
+            <section key={page.id} style={{ pageBreakAfter: "always", marginBottom: "18px" }}>
+              <p style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: "#5a6a86", margin: "0 0 6px" }}>
+                Page {index + 1}
+              </p>
+              <CourseContent markdown={page.markdown} />
+            </section>
+          ))}
+        </div>
+      </div>
+    </main>
   );
 }
