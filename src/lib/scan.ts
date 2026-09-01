@@ -180,8 +180,16 @@ function quadFromMask(
   const best = maxAreaQuad(hull);
   if (!best) return null;
 
-  const quad = orderQuad(best).map((corner) => ({ x: corner.x / scale, y: corner.y / scale })) as Quad;
+  const raw = orderQuad(best).map((corner) => ({ x: corner.x / scale, y: corner.y / scale })) as Quad;
+  // Petite marge vers l'extérieur : évite de rogner la première ligne écrite.
+  const cx = raw.reduce((sum, p) => sum + p.x, 0) / 4;
+  const cy = raw.reduce((sum, p) => sum + p.y, 0) / 4;
+  const quad = raw.map((p) => ({
+    x: Math.min(canvas.width, Math.max(0, cx + (p.x - cx) * 1.02)),
+    y: Math.min(canvas.height, Math.max(0, cy + (p.y - cy) * 1.02)),
+  })) as Quad;
   return isPlausible(quad, canvas.width, canvas.height) ? quad : null;
+
 }
 
 
