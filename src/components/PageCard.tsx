@@ -1,139 +1,49 @@
-import { ArrowDown, ArrowUp, Crop, RefreshCw, Sparkles, Trash2 } from "lucide-react";
-import { CourseContent } from "./CourseContent";
-import type { CoursePage } from "@/lib/pages";
-import { statusLabel } from "@/lib/pages";
+import { ArrowDown, ArrowUp, Crop, Trash2 } from "lucide-react";
+import type { ScanPage } from "@/lib/pages";
 
 type Props = {
-  page: CoursePage;
+  page: ScanPage;
   index: number;
   total: number;
-  showTranscription: boolean;
   onMove: (id: string, direction: -1 | 1) => void;
   onRemove: (id: string) => void;
-  onRetry: (id: string) => void;
   onAdjust: (id: string) => void;
-  onEnhance: (id: string) => void;
-  onChange: (id: string, markdown: string) => void;
 };
 
-const statusStyles: Record<CoursePage["status"], string> = {
-  pending: "text-ink-soft",
-  running: "text-brick",
-  done: "text-sage",
-  error: "text-destructive",
-};
-
-export function PageCard({
-  page,
-  index,
-  total,
-  showTranscription,
-  onMove,
-  onRemove,
-  onRetry,
-  onAdjust,
-  onEnhance,
-  onChange,
-}: Props) {
+export function PageCard({ page, index, total, onMove, onRemove, onAdjust }: Props) {
   return (
-    <article className="sheet p-3">
-      <header className="flex items-start gap-3">
-        <img
-          src={page.imageDataUrl}
-          alt={`Page scannée ${index + 1}`}
-          className="h-20 w-16 flex-none rounded border border-border bg-white object-cover"
-        />
-        <div className="min-w-0 flex-1">
-          <p className="font-mono text-xs tracking-tight text-ink-soft">Page {index + 1}</p>
-          {page.enhancing ? (
-            <p className="font-mono text-[11px] text-brick">scan IA en cours…</p>
-          ) : page.aiEnhanced ? (
-            <p className="font-mono text-[11px] text-sage">scan IA (rendu imprimante)</p>
-          ) : page.quad ? (
-            <p className="font-mono text-[11px] text-sage">scan redressé</p>
-          ) : (
-            <p className="font-mono text-[11px] text-ink-soft">recadrage auto indisponible</p>
-          )}
-          {showTranscription ? (
-            <p className={`font-mono text-xs ${statusStyles[page.status]}`}>{statusLabel(page.status)}</p>
-          ) : null}
-          {page.error ? <p className="mt-1 text-xs text-destructive">{page.error}</p> : null}
-        </div>
-        <div className="flex flex-none flex-wrap items-center justify-end gap-1">
-          <IconButton label="Monter" disabled={index === 0} onClick={() => onMove(page.id, -1)}>
-            <ArrowUp className="size-4" />
-          </IconButton>
-          <IconButton label="Descendre" disabled={index === total - 1} onClick={() => onMove(page.id, 1)}>
-            <ArrowDown className="size-4" />
-          </IconButton>
-          <IconButton label="Ajuster le recadrage" onClick={() => onAdjust(page.id)}>
-            <Crop className="size-4" />
-          </IconButton>
-          <IconButton
-            label="Rendu scanner par l'IA"
-            disabled={page.enhancing === true}
-            onClick={() => onEnhance(page.id)}
-          >
-            <Sparkles className={`size-4 ${page.aiEnhanced ? "text-sage" : ""}`} />
-          </IconButton>
-          {showTranscription ? (
-            <IconButton
-              label="Relancer la retranscription"
-              disabled={page.status === "running"}
-              onClick={() => onRetry(page.id)}
-            >
-              <RefreshCw className="size-4" />
-            </IconButton>
-          ) : null}
-          <IconButton label="Supprimer" onClick={() => onRemove(page.id)}>
-            <Trash2 className="size-4 text-destructive" />
-          </IconButton>
-        </div>
-      </header>
-
-      {showTranscription && (page.status !== "pending" || page.markdown) ? (
-        <div className="mt-3 space-y-3">
-          {page.status === "done" ? (
-            <p className="font-mono text-[11px] text-sage">Retranscription terminée ✓</p>
-          ) : null}
-          {page.markdown.includes("[illisible]") ? (
-            <p
-              role="status"
-              className="rounded border border-brick/50 bg-brick/10 p-2 text-xs text-ink"
-            >
-              Certains éléments semblent ambigus ou illisibles. Vérifiez la retranscription et corrigez les
-              passages marqués « [illisible] ».
-            </p>
-          ) : null}
-          <div className="grid gap-3 md:grid-cols-2">
-            <figure className="m-0 rounded border border-border bg-white p-2">
-              <figcaption className="mb-2 font-mono text-[11px] text-ink-soft">Photo originale</figcaption>
-              <img
-                src={page.imageDataUrl}
-                alt={`Photo originale de la page ${index + 1}`}
-                className="w-full rounded object-contain"
-              />
-            </figure>
-            <div className="space-y-3">
-              <div className="rounded border border-dashed border-border bg-card p-3">
-                <p className="mb-2 font-mono text-[11px] text-ink-soft">Retranscription numérique</p>
-                <CourseContent markdown={page.markdown} />
-              </div>
-              <label className="block">
-                <span className="font-mono text-[11px] text-ink-soft">Modifier la retranscription</span>
-                <textarea
-                  value={page.markdown}
-                  onChange={(event) => onChange(page.id, event.target.value)}
-                  rows={8}
-                  spellCheck={false}
-                  placeholder="La retranscription apparaîtra ici…"
-                  className="mt-1 w-full resize-y rounded border border-input bg-secondary/40 p-2 font-mono text-xs leading-relaxed text-ink outline-none focus:border-brick"
-                />
-              </label>
-            </div>
-          </div>
-        </div>
-      ) : null}
+    <article className="sheet flex items-start gap-3 p-3">
+      <img
+        src={page.imageDataUrl}
+        alt={`Page scannée ${index + 1}`}
+        className="h-24 w-20 flex-none rounded border border-border bg-white object-cover"
+      />
+      <div className="min-w-0 flex-1">
+        <p className="font-mono text-xs tracking-tight text-ink-soft">Page {index + 1}</p>
+        {page.quad ? (
+          <p className="font-mono text-[11px] text-sage">scan redressé</p>
+        ) : (
+          <p className="font-mono text-[11px] text-ink-soft">recadrage auto indisponible</p>
+        )}
+      </div>
+      <div className="flex flex-none flex-wrap items-center justify-end gap-1">
+        <IconButton label="Monter" disabled={index === 0} onClick={() => onMove(page.id, -1)}>
+          <ArrowUp className="size-4" />
+        </IconButton>
+        <IconButton
+          label="Descendre"
+          disabled={index === total - 1}
+          onClick={() => onMove(page.id, 1)}
+        >
+          <ArrowDown className="size-4" />
+        </IconButton>
+        <IconButton label="Ajuster le recadrage" onClick={() => onAdjust(page.id)}>
+          <Crop className="size-4" />
+        </IconButton>
+        <IconButton label="Supprimer" onClick={() => onRemove(page.id)}>
+          <Trash2 className="size-4 text-destructive" />
+        </IconButton>
+      </div>
     </article>
   );
 }

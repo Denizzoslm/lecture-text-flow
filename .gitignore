@@ -10,6 +10,11 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+
+# Secrets locaux — ne jamais committer (les commits se synchronisent vers Lovable)
+.env
+.env.*
+!.env.example
 .output
 .vinxi
 .tanstack/**
@@ -30,3 +35,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Claude Code local config / caches
+.claude/
+.npm-cache/
+.vite/
+
+# npm lockfile (project uses bun.lock)
+package-lock.json

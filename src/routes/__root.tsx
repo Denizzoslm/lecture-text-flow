@@ -78,11 +78,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Cahier numérique" },
-      { name: "description", content: "Retranscription de pages de cours de maths en PDF structuré." },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Cahier numérique" },
-      { property: "og:description", content: "Retranscription de pages de cours de maths en PDF structuré." },
+      { title: "Digital Math" },
+      {
+        name: "description",
+        content:
+          "Une photo de notes de maths manuscrites → un document numérique fidèle, exporté en PDF.",
+      },
+      { name: "author", content: "Digital Math" },
+      { property: "og:title", content: "Digital Math" },
+      {
+        property: "og:description",
+        content: "Une photo. Une retranscription propre. Un PDF prêt à imprimer.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@Lovable" },
@@ -97,7 +104,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap",
       },
     ],
   }),

@@ -4,7 +4,11 @@ import { jsPDF } from "jspdf";
 const A4 = { width: 210, height: 297 };
 const MARGIN = 8;
 
-export async function downloadScannedPdf(images: string[], title: string, meta: string): Promise<void> {
+export async function downloadScannedPdf(
+  images: string[],
+  title: string,
+  meta: string,
+): Promise<void> {
   if (!images.length) throw new Error("Aucune page à exporter.");
   const doc = new jsPDF({ unit: "mm", format: "a4", compress: true });
 
@@ -30,10 +34,11 @@ export async function downloadScannedPdf(images: string[], title: string, meta: 
       alias: `page-${index}`,
       compression: "FAST",
     });
-
   }
 
-  const base = (title.trim() || "cahier-numerique").replace(/[^\p{L}\p{N}\- ]+/gu, "").trim() || "cahier-numerique";
+  const base =
+    (title.trim() || "cahier-numerique").replace(/[^\p{L}\p{N}\- ]+/gu, "").trim() ||
+    "cahier-numerique";
   doc.setProperties({ title: title.trim() || "Cahier numérique", subject: meta.trim() });
   doc.save(`${base.replace(/\s+/g, "-").toLowerCase()}-scan.pdf`);
 }

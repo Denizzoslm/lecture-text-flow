@@ -15,7 +15,14 @@ const VIEW_MAX = 480;
 const LABELS = ["haut-gauche", "haut-droit", "bas-droit", "bas-gauche"];
 
 /** Ajustement manuel des 4 coins du document (mobile-first, tactile). */
-export function CropEditor({ sourceDataUrl, sourceWidth, sourceHeight, quad, onCancel, onValidate }: Props) {
+export function CropEditor({
+  sourceDataUrl,
+  sourceWidth,
+  sourceHeight,
+  quad,
+  onCancel,
+  onValidate,
+}: Props) {
   const scale = Math.min(1, VIEW_MAX / Math.max(sourceWidth, sourceHeight));
   const viewWidth = Math.round(sourceWidth * scale);
   const viewHeight = Math.round(sourceHeight * scale);
@@ -41,7 +48,9 @@ export function CropEditor({ sourceDataUrl, sourceWidth, sourceHeight, quad, onC
       const rect = frame.getBoundingClientRect();
       const x = Math.min(viewWidth, Math.max(0, event.clientX - rect.left));
       const y = Math.min(viewHeight, Math.max(0, event.clientY - rect.top));
-      setCorners((current) => current.map((corner, i) => (i === index ? { x, y } : corner)) as Quad);
+      setCorners(
+        (current) => current.map((corner, i) => (i === index ? { x, y } : corner)) as Quad,
+      );
       event.preventDefault();
     }
     function up() {
@@ -62,7 +71,8 @@ export function CropEditor({ sourceDataUrl, sourceWidth, sourceHeight, quad, onC
       <div className="sheet max-h-full w-full max-w-md overflow-auto p-4">
         <p className="font-mono text-[11px] text-ink-soft">Ajuster le recadrage</p>
         <p className="mb-3 text-xs text-ink-soft">
-          Déplacez les quatre coins sur les bords de la feuille, puis validez pour rescanner la page.
+          Déplacez les quatre coins sur les bords de la feuille, puis validez pour rescanner la
+          page.
         </p>
 
         <div
@@ -70,9 +80,22 @@ export function CropEditor({ sourceDataUrl, sourceWidth, sourceHeight, quad, onC
           className="relative mx-auto touch-none select-none"
           style={{ width: viewWidth, height: viewHeight }}
         >
-          <img src={sourceDataUrl} alt="Photo d'origine" className="h-full w-full rounded border border-border" />
-          <svg className="pointer-events-none absolute inset-0" width={viewWidth} height={viewHeight}>
-            <polygon points={polygon} fill="rgba(138,58,36,0.15)" stroke="#8a3a24" strokeWidth={2} />
+          <img
+            src={sourceDataUrl}
+            alt="Photo d'origine"
+            className="h-full w-full rounded border border-border"
+          />
+          <svg
+            className="pointer-events-none absolute inset-0"
+            width={viewWidth}
+            height={viewHeight}
+          >
+            <polygon
+              points={polygon}
+              fill="rgba(138,58,36,0.15)"
+              stroke="#8a3a24"
+              strokeWidth={2}
+            />
           </svg>
           {corners.map((corner, index) => (
             <button
@@ -92,7 +115,9 @@ export function CropEditor({ sourceDataUrl, sourceWidth, sourceHeight, quad, onC
         <div className="mt-4 flex gap-2">
           <button
             type="button"
-            onClick={() => onValidate(corners.map((c) => ({ x: c.x / scale, y: c.y / scale })) as Quad)}
+            onClick={() =>
+              onValidate(corners.map((c) => ({ x: c.x / scale, y: c.y / scale })) as Quad)
+            }
             className="inline-flex flex-1 items-center justify-center gap-2 rounded border border-brick bg-brick px-3 py-2 text-sm font-medium text-primary-foreground"
           >
             <Check className="size-4" /> Rescanner

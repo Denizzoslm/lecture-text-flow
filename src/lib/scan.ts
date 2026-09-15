@@ -180,7 +180,10 @@ function quadFromMask(
   const best = maxAreaQuad(hull);
   if (!best) return null;
 
-  const raw = orderQuad(best).map((corner) => ({ x: corner.x / scale, y: corner.y / scale })) as Quad;
+  const raw = orderQuad(best).map((corner) => ({
+    x: corner.x / scale,
+    y: corner.y / scale,
+  })) as Quad;
   // Petite marge vers l'extérieur : évite de rogner la première ligne écrite.
   const cx = raw.reduce((sum, p) => sum + p.x, 0) / 4;
   const cy = raw.reduce((sum, p) => sum + p.y, 0) / 4;
@@ -189,9 +192,7 @@ function quadFromMask(
     y: Math.min(canvas.height, Math.max(0, cy + (p.y - cy) * 1.02)),
   })) as Quad;
   return isPlausible(quad, canvas.width, canvas.height) ? quad : null;
-
 }
-
 
 function convexHull(points: Corner[]): Corner[] {
   if (points.length < 4) return points;
@@ -260,7 +261,9 @@ function maxAreaQuad(hull: Corner[]): Corner[] | null {
 function orderQuad(quad: Corner[]): Quad {
   const cx = quad.reduce((sum, p) => sum + p.x, 0) / 4;
   const cy = quad.reduce((sum, p) => sum + p.y, 0) / 4;
-  const sorted = [...quad].sort((a, b) => Math.atan2(a.y - cy, a.x - cx) - Math.atan2(b.y - cy, b.x - cx));
+  const sorted = [...quad].sort(
+    (a, b) => Math.atan2(a.y - cy, a.x - cx) - Math.atan2(b.y - cy, b.x - cx),
+  );
   let start = 0;
   let bestSum = Infinity;
   sorted.forEach((point, index) => {
@@ -277,7 +280,6 @@ function orderQuad(quad: Corner[]): Quad {
     sorted[(start + 3) % 4] as Corner,
   ];
 }
-
 
 function otsu(gray: Uint8ClampedArray): number {
   const hist = new Array<number>(256).fill(0);
@@ -307,7 +309,11 @@ function otsu(gray: Uint8ClampedArray): number {
 }
 
 /** Composante contenant le centre de l'image (repli : la plus grande). */
-function pageComponent(mask: Uint8Array, w: number, h: number): { pixels: number[]; size: number } | null {
+function pageComponent(
+  mask: Uint8Array,
+  w: number,
+  h: number,
+): { pixels: number[]; size: number } | null {
   const center = Math.floor(h / 2) * w + Math.floor(w / 2);
   if (mask[center]) {
     const seen = new Uint8Array(w * h);
@@ -335,8 +341,11 @@ function pageComponent(mask: Uint8Array, w: number, h: number): { pixels: number
   return largestComponent(mask, w, h);
 }
 
-function largestComponent(mask: Uint8Array, w: number, h: number): { pixels: number[]; size: number } | null {
-
+function largestComponent(
+  mask: Uint8Array,
+  w: number,
+  h: number,
+): { pixels: number[]; size: number } | null {
   const seen = new Uint8Array(w * h);
   const stack: number[] = [];
   let best: { pixels: number[]; size: number } | null = null;
@@ -523,7 +532,8 @@ function solve(A: number[][], b: number[]): number[] | null {
   for (let i = 0; i < n; i += 1) {
     let pivot = i;
     for (let r = i + 1; r < n; r += 1) {
-      if (Math.abs((A[r] as number[])[i] ?? 0) > Math.abs((A[pivot] as number[])[i] ?? 0)) pivot = r;
+      if (Math.abs((A[r] as number[])[i] ?? 0) > Math.abs((A[pivot] as number[])[i] ?? 0))
+        pivot = r;
     }
     if (Math.abs((A[pivot] as number[])[i] ?? 0) < 1e-10) return null;
     [A[i], A[pivot]] = [A[pivot] as number[], A[i] as number[]];
@@ -595,7 +605,12 @@ function enhance(ctx: CanvasRenderingContext2D, width: number, height: number) {
 }
 
 /** Flou (moyenne) séparable sur la version « claire » de l'image, pour estimer le papier. */
-function boxBlurMax(luma: Float32Array, width: number, height: number, radius: number): Float32Array {
+function boxBlurMax(
+  luma: Float32Array,
+  width: number,
+  height: number,
+  radius: number,
+): Float32Array {
   // dilatation légère : on prend le maximum local sur une grille grossière puis on lisse.
   const step = Math.max(1, Math.round(radius / 2));
   const gw = Math.ceil(width / step);
